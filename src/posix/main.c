@@ -44,9 +44,6 @@
 
 #define OPENTHREAD_POSIX_APP_TYPE_NCP 1
 #define OPENTHREAD_POSIX_APP_TYPE_CLI 2
-#define MAX_SUPPORT_PROTOCOL 3
-#define MAX_SUPPORT_PARAMETER 3
-#define DEVICE_FILE_LEN 20
 
 #include <openthread/diag.h>
 #include <openthread/logging.h>
@@ -73,17 +70,6 @@ typedef struct PosixConfig
     bool             mPrintRadioVersion; ///< Whether to print radio firmware version.
     bool             mIsVerbose;         ///< Whether to print log to stderr.
 } PosixConfig;
-
-const char *sProtocol[]    = {"hdlc", "spi", "spinel", "uart", "forkpty"};
-const char *sConnectPara[] = {"baudrate", "parity", "flowcontrol", "forkpty-arg"};
-
-typedef struct RadioUrl
-{
-    const char *sProtocol[MAX_SUPPORT_PROTOCOL];
-    char        device[DEVICE_FILE_LEN];
-    const char *sParameter[MAX_SUPPORT_PARAMETER];
-    char        sValue[DEVICE_FILE_LEN];
-} RadioUrl;
 
 static jmp_buf gResetJump;
 
@@ -120,7 +106,7 @@ static void PrintUsage(const char *aProgramName, FILE *aStream, int aExitCode)
     exit(aExitCode);
 }
 
-static int ParseUrl(RadioUrl *info, char *url)
+static int ParseUrl(otRadioUrl *info, char *url)
 {
     char *deviceInfo = strstr(url, "://");
     char *pStart     = url;
@@ -128,9 +114,8 @@ static int ParseUrl(RadioUrl *info, char *url)
     char *pMid       = NULL;
     int   i          = 0;
     int   j          = 0;
-    int   cProtocol  = sizeof(sProtocol) / sizeof(sProtocol[0]);
+    int   cProtocol  = sizeof(aProtocol) / sizeof(aProtocol[0]);
     // int cParameter = sizeof(sConnectPara) / sizeof(sConnectPara[0]);
-    memset(info, 0, sizeof(RadioUrl));
 
     if (!deviceInfo)
     {
@@ -146,9 +131,9 @@ static int ParseUrl(RadioUrl *info, char *url)
         }
         for (i = 0; i < cProtocol; i++)
         {
-            if (strncmp(pStart, sProtocol[i], (int)(pEnd - pStart)) == 0)
+            if (strncmp(pStart, aProtocol[i], (int)(pEnd - pStart)) == 0)
             {
-                info->sProtocol[j] = sProtocol[i];
+                info->mProtocol[j] = aProtocol[i];
                 j++;
             }
         }
@@ -160,7 +145,7 @@ static int ParseUrl(RadioUrl *info, char *url)
     pEnd   = strstr(pStart, "?");
     if (pEnd)
     {
-        strncpy(info->device, pStart, pEnd - pStart);
+        strncpy(info->mDevice, pStart, pEnd - pStart);
     }
     else
     {
@@ -174,7 +159,7 @@ static int ParseUrl(RadioUrl *info, char *url)
         pMid = strstr(pStart, "=");
         if (!pEnd)
         {
-            strcpy(info->sValue, pMid + 1);
+            strcpy(info->mValue, pMid + 1);
             break;
         }
         pStart = pEnd + 1;
@@ -185,7 +170,6 @@ static int ParseUrl(RadioUrl *info, char *url)
 static void ParseArg(int aArgCount, char *aArgVector[], PosixConfig *aConfig)
 {
     memset(aConfig, 0, sizeof(PosixConfig));
-    RadioUrl aUrl;
 
     aConfig->mPlatformConfig.mSpeedUpFactor = 1;
     aConfig->mPlatformConfig.mResetRadio    = true;
@@ -252,12 +236,10 @@ static void ParseArg(int aArgCount, char *aArgVector[], PosixConfig *aConfig)
         }
     }
 
-    if (ParseUrl(&aUrl, aArgVector[optind]) < 0)
+    if (ParseUrl(aConfig->mPlatformConfig.mRadioUrl, aArgVector[optind]) < 0)
     {
         PrintUsage(aArgVector[0], stderr, OT_EXIT_INVALID_ARGUMENTS);
     }
-    aConfig->mPlatformConfig.mRadioFile   = aUrl.device;
-    aConfig->mPlatformConfig.mRadioConfig = aUrl.sValue;
     if (optind >= aArgCount)
     {
         PrintUsage(aArgVector[0], stderr, OT_EXIT_INVALID_ARGUMENTS);

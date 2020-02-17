@@ -35,6 +35,11 @@
 #ifndef OPENTHREAD_SYSTEM_H_
 #define OPENTHREAD_SYSTEM_H_
 
+#define MAX_SUPPORT_PROTOCOL 3
+#define MAX_SUPPORT_PARAMETER 3
+#define DEVICE_PARAMETERLEN 10
+#define DEVICE_FILE_LEN 20
+
 #include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -66,7 +71,7 @@ enum
     /**
      * Invalid arguments.
      */
-    OT_EXIT_INVALID_ARGUMENTS = 2,
+    OT_EXIT_INVALID_ARGUMENTS = 4,
 
     /**
      * Incompatible radio spinel.
@@ -84,6 +89,17 @@ enum
     OT_EXIT_ERROR_ERRNO = 5,
 };
 
+const char *aProtocol[]    = {"hdlc", "spi", "spinel", "uart", "forkpty"};
+const char *aConnectPara[] = {"speed", "parity", "cstopb", "forkpty-arg"};
+
+typedef struct otRadioUrl
+{
+    const char *mProtocol[MAX_SUPPORT_PROTOCOL];
+    char        mDevice[DEVICE_FILE_LEN];
+    const char *mParameter[MAX_SUPPORT_PARAMETER];
+    char        mValue[MAX_SUPPORT_PARAMETER][DEVICE_PARAMETER_LEN];
+} otRadioUrl;
+
 /**
  * This structure represents platform specific configurations.
  *
@@ -93,9 +109,8 @@ typedef struct otPlatformConfig
     uint64_t    mNodeId;        ///< Unique node ID.
     uint32_t    mSpeedUpFactor; ///< Speed up factor.
     const char *mInterfaceName; ///< Thread network interface name.
-    const char *mRadioFile;     ///< Radio file path.
-    const char *mRadioConfig;   ///< Radio configurations.
     bool        mResetRadio;    ///< Whether to reset RCP when initializing.
+    otRadioUrl  mRadioUrl;      ///< Parsed Radio URL struct
 } otPlatformConfig;
 
 /**
