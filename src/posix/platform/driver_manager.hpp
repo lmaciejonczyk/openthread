@@ -52,11 +52,14 @@ typedef struct ConnectOption
 class Driver
 {
 public:
-    virtual otError Init(const otPlatformConfig &aPlatformConfig) = 0;
+    virtual otError Init(const otPlatformConfig &aPlatformConfig)                                               = 0;
+    virtual void    Deinit(void)                                                                                = 0;
+    virtual void    UpdateFdSet(fd_set &aReadFdSet, fd_set &aWriteFdSet, int &aMaxFd, struct timeval &aTimeout) = 0;
+    virtual void    Process(const fd_set &aReadFdSet, const fd_set &aWriteFdSet)                                = 0;
 
     typedef otError (*InputFunction)(char *aBuffer, uint16_t aLength);
     typedef otError (*OutputFunction)(char *aBuffer, uint16_t aLength);
-    typedef otError (*WaitFunction)(void);
+    typedef otError (*WaitFunction)(struct timeval &aTimeout);
 
     typedef struct Interface
     {
@@ -65,7 +68,9 @@ public:
         WaitFunction   mWait;
     } Interface;
 
-private:
+    Interface &GetInterface(void) { return mInterface; }
+
+protected:
     Interface   mInterface;
     const char *mName;
 };

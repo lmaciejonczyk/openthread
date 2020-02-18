@@ -66,6 +66,7 @@ public:
      */
     void Deinit(void);
 
+    typedef Hdlc::MultiFrameBuffer<kMaxFrameSize> RxFrameBuffer;
     /**
      * This method gets the status of promiscuous mode.
      *
@@ -521,7 +522,7 @@ public:
 private:
     enum
     {
-        kMaxSpinelFrame        = HdlcInterface::kMaxFrameSize,
+        kMaxSpinelFrame        = 2048,
         kMaxWaitTime           = 2000, ///< Max time to wait for response in milliseconds.
         kVersionStringSize     = 128,  ///< Max size of version string.
         kCapsBufferSize        = 100,  ///< Max buffer size used to store `SPINEL_PROP_CAPS` value.
@@ -628,7 +629,7 @@ private:
         return !(aKey == SPINEL_PROP_STREAM_RAW || aKey == SPINEL_PROP_MAC_ENERGY_SCAN_RESULT);
     }
 
-    void HandleNotification(HdlcInterface::RxFrameBuffer &aFrameBuffer);
+    void HandleNotification(RxFrameBuffer &aFrameBuffer);
     void HandleNotification(const uint8_t *aBuffer, uint16_t aLength);
     void HandleValueIs(spinel_prop_key_t aKey, const uint8_t *aBuffer, uint16_t aLength);
 

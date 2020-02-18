@@ -116,7 +116,7 @@ namespace PosixApp {
 
 DriverUart::DriverUart(Interface &aInterface)
     : Driver()
-    , mUpperInterface(mInput, mOutput, mWait)
+    , mInterface(mInput, mOutput, mWait)
     , mSockFd(-1)
 {
 }
@@ -132,10 +132,10 @@ otError DriverUart::Init(const otRadioUrl &aRadioUrl)
 
     if (S_ISCHR(st.st_mode))
     {
-        mSockFd                 = OpenFile(aRadio);
-        mUpperInterface.mOutput = &Read;
-        mUpperInterface.mInput  = &Write;
-        mUpperInterface.mWait   = &WaitForWritable;
+        mSockFd                  = OpenFile(aRadio);
+        this->mInterface.mOutput = &Read;
+        this->mInterface.mInput  = &Write;
+        this->mInterface.mWait   = &WaitForFrame;
         VerifyOrExit(mSockFd != -1, error = OT_ERROR_INVALID_ARGS);
     }
     else
@@ -297,22 +297,6 @@ void DriverUart::Process(const fd_set &aReadFdSet, const fd_set &aWriteFdSet)
     {
         Read();
     }
-}
-
-otError DriverUart::SetUpperInterface(Driver *aDriver)
-{
-    otError error = OT_ERROR_NONE;
-    if (aDriver)
-    {
-        mUpperDriver = aDriver;
-    }
-    else
-    {
-        error = OT_ERROR_FAILED;
-    }
-
-exit:
-    return error;
 }
 
 otError DriverUart::WaitForWritable(void)

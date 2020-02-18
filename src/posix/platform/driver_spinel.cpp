@@ -307,10 +307,10 @@ void DriverSpinel::Deinit(void)
 
 void DriverSpinel::HandleReceivedFrame(void)
 {
-    otError                         error       = OT_ERROR_NONE;
-    SpinelInterface::RxFrameBuffer &frameBuffer = mLowerDriver.GetRxFrameBuffer();
-    uint8_t                         header;
-    spinel_ssize_t                  unpacked;
+    otError        error       = OT_ERROR_NONE;
+    RxFrameBuffer &frameBuffer = mLowerDriver.GetRxFrameBuffer();
+    uint8_t        header;
+    spinel_ssize_t unpacked;
 
     unpacked = spinel_datatype_unpack(frameBuffer.GetFrame(), frameBuffer.GetLength(), "C", &header);
 
@@ -336,7 +336,7 @@ exit:
     }
 }
 
-void DriverSpinel::HandleNotification(HdlcInterface::RxFrameBuffer &aFrameBuffer)
+void DriverSpinel::HandleNotification(RxFrameBuffer &aFrameBuffer)
 {
     spinel_prop_key_t key;
     spinel_size_t     len = 0;

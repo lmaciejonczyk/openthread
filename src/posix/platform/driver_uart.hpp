@@ -44,7 +44,7 @@ namespace PosixApp {
  * This class defines a UART interface for RCP and upper driver
  *
  */
-class DriverUart : public Driver, LowerInterface
+class DriverUart : public Driver
 {
 public:
     /**
@@ -112,17 +112,6 @@ public:
      */
     void Process(const fd_set &aReadFdSet, const fd_set &aWriteFdSet);
 
-    /**
-     * This method sets the upper layer driver.
-     *
-     * @param[in]  aDriver  A pointer to a Driver.
-     *
-     * @retval OT_ERROR_NONE             Part or all of spinel frame is received.
-     * @retval OT_ERROR_RESPONSE_TIMEOUT No spinel frame is received within @p aTimeout.
-     *
-     */
-    otError SetUpperInterface(Driver *aDriver);
-
 private:
     /**
      * This method instructs `DriverUart` to read data from radio over the socket.
@@ -165,8 +154,7 @@ private:
 
     static int OpenFile(const char *aFile, const char *aConfig);
 
-    int     mSockFd;
-    Driver *mUpperDriver;
+    int mSockFd;
 };
 
 } // namespace PosixApp
