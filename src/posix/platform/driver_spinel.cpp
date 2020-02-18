@@ -1033,7 +1033,7 @@ otError DriverSpinel::WaitResponse(void)
 
     do
     {
-        if (mLowerDriver.WaitForFrame(timeout) == OT_ERROR_RESPONSE_TIMEOUT)
+        if (mLowerDriver.GetInterface.mWait(timeout) == OT_ERROR_RESPONSE_TIMEOUT)
         {
             FreeTid(mWaitingTid);
             mWaitingTid = 0;
@@ -1089,7 +1089,7 @@ otError DriverSpinel::SendReset(void)
 
     VerifyOrExit(packed > 0 && static_cast<size_t>(packed) <= sizeof(buffer), error = OT_ERROR_NO_BUFS);
 
-    SuccessOrExit(error = mLowerDriver.SendFrame(buffer, static_cast<uint16_t>(packed)));
+    SuccessOrExit(error = mLowerDriver.GetInterface().mInput(buffer, static_cast<uint16_t>(packed)));
 
     sleep(0);
 
@@ -1125,7 +1125,7 @@ otError DriverSpinel::SendCommand(uint32_t          aCommand,
         offset += static_cast<uint16_t>(packed);
     }
 
-    error = mLowerDriver.SendFrame(buffer, offset);
+    error = mLowerDriver.GetInterface().mInput(buffer, offset);
 
 exit:
     return error;

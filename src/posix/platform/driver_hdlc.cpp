@@ -106,7 +106,7 @@ otError DriverHdlc::Write(const uint8_t *aFrame, uint16_t aLength)
     SuccessOrExit(error = hdlcEncoder.Encode(aFrame, aLength));
     SuccessOrExit(error = hdlcEncoder.EndFrame());
 
-    error = mLowerDriver.GetInterface.mInput(encoderBuffer.GetFrame(), encoderBuffer.GetLength());
+    error = mLowerDriver.GetInterface().mInput(encoderBuffer.GetFrame(), encoderBuffer.GetLength());
 
 exit:
     return error;
@@ -125,7 +125,7 @@ void HdlcInterface::UpdateFdSet(fd_set &aReadFdSet, fd_set &aWriteFdSet, int &aM
 otError DriverHdlc::Read(uint8_t *aFrame, uint16_t aLength)
 {
     otError error = OT_ERROR_NONE;
-    error         = mLowerDriver.GetInterface.mOutput(aFrame, aLength);
+    error         = mLowerDriver.GetInterface().mOutput(aFrame, aLength);
     Decode(aFrame, aLength);
 
 exit:
@@ -135,7 +135,7 @@ exit:
 otError DriverHdlc::WaitForFrame(struct timeval &aTimeout)
 {
     otError error = OT_ERROR_NONE;
-    error         = mLowerDriver.GetInterface.mWait(aTimeout);
+    error         = mLowerDriver.GetInterface().mWait(aTimeout);
 
 exit:
     return error;
