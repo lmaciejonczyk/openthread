@@ -35,6 +35,10 @@
 #ifndef OPENTHREAD_SYSTEM_H_
 #define OPENTHREAD_SYSTEM_H_
 
+#define MAX_SUPPORT_PROTOCOL 3
+#define DEVICE_ARG_LEN 10
+#define DEVICE_FILE_LEN 50
+
 #include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -84,6 +88,13 @@ enum
     OT_EXIT_ERROR_ERRNO = 5,
 };
 
+typedef struct otRadioUrl
+{
+    const char *mProtocols[MAX_SUPPORT_PROTOCOL];
+    char        mDevice[DEVICE_FILE_LEN];
+    char        mArgument[DEVICE_ARG_LEN];
+} otRadioUrl;
+
 /**
  * This structure represents platform specific configurations.
  *
@@ -93,9 +104,8 @@ typedef struct otPlatformConfig
     uint64_t    mNodeId;        ///< Unique node ID.
     uint32_t    mSpeedUpFactor; ///< Speed up factor.
     const char *mInterfaceName; ///< Thread network interface name.
-    const char *mRadioFile;     ///< Radio file path.
-    const char *mRadioConfig;   ///< Radio configurations.
     bool        mResetRadio;    ///< Whether to reset RCP when initializing.
+    otRadioUrl  mRadioUrl;      ///< Parsed Radio URL struct
 } otPlatformConfig;
 
 /**
