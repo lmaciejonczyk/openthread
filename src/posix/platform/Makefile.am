@@ -36,26 +36,31 @@ libopenthread_posix_a_CPPFLAGS            = \
     -I$(top_srcdir)/src/core                \
     -I$(top_srcdir)/src/posix/platform      \
     -D_GNU_SOURCE                           \
+    -DOPENTHREAD_FTD=1                      \
+    -DOPENTHREAD_MTD=0                      \
+    -DOPENTHREAD_RADIO=0                    \
     $(NULL)
 
 libopenthread_posix_a_SOURCES             = \
-    alarm.c                                 \
-    entropy.c                               \
+    alarm.cpp                               \
+    entropy.cpp                             \
     hdlc_interface.cpp                      \
-    logging.c                               \
-    misc.c                                  \
+    logging.cpp                             \
+    misc.cpp                                \
     netif.cpp                               \
     radio_spinel.cpp                        \
     settings.cpp                            \
-    sim.c                                   \
-    system.c                                \
-    uart.c                                  \
+    spi_interface.cpp                       \
+    system.cpp                              \
+    uart.cpp                                \
     udp.cpp                                 \
+    virtual_time.cpp                        \
     $(NULL)
 
 noinst_HEADERS                            = \
-    platform-posix.h                        \
     hdlc_interface.hpp                      \
+    openthread-posix-config.h               \
+    platform-posix.h                        \
     radio_spinel.hpp                        \
     spinel_interface.hpp                    \
     $(NULL)
@@ -70,6 +75,7 @@ dist_openthread_HEADERS = $(openthread_headers)
 PRETTY_FILES                              = \
     $(libopenthread_posix_a_SOURCES)        \
     $(noinst_HEADERS)                       \
+    $(openthread_HEADERS)                   \
     $(NULL)
 
 if OPENTHREAD_BUILD_COVERAGE

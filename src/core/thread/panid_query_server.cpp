@@ -89,22 +89,18 @@ exit:
     return;
 }
 
-void PanIdQueryServer::HandleScanResult(Instance &aInstance, Mac::RxFrame *aFrame)
+void PanIdQueryServer::HandleScanResult(Mac::ActiveScanResult *aScanResult, void *aContext)
 {
-    aInstance.Get<PanIdQueryServer>().HandleScanResult(aFrame);
+    static_cast<PanIdQueryServer *>(aContext)->HandleScanResult(aScanResult);
 }
 
-void PanIdQueryServer::HandleScanResult(Mac::RxFrame *aFrame)
+void PanIdQueryServer::HandleScanResult(Mac::ActiveScanResult *aScanResult)
 {
-    uint16_t panId;
-
-    if (aFrame != NULL)
+    if (aScanResult != NULL)
     {
-        aFrame->GetSrcPanId(panId);
-
-        if (panId == mPanId)
+        if (aScanResult->mPanId == mPanId)
         {
-            mChannelMask |= 1 << aFrame->GetChannel();
+            mChannelMask |= 1 << aScanResult->mChannel;
         }
     }
     else if (mChannelMask != 0)
@@ -128,11 +124,11 @@ otError PanIdQueryServer::SendConflict(void)
 
     channelMask.Init();
     channelMask.SetChannelMask(mChannelMask);
-    SuccessOrExit(error = message->AppendTlv(channelMask));
+    SuccessOrExit(error = channelMask.AppendTo(*message));
 
     panId.Init();
     panId.SetPanId(mPanId);
-    SuccessOrExit(error = message->AppendTlv(panId));
+    SuccessOrExit(error = panId.AppendTo(*message));
 
     messageInfo.SetSockAddr(Get<Mle::MleRouter>().GetMeshLocal16());
     messageInfo.SetPeerAddr(mCommissioner);
@@ -158,7 +154,7 @@ void PanIdQueryServer::HandleTimer(Timer &aTimer)
 
 void PanIdQueryServer::HandleTimer(void)
 {
-    Get<Mac::Mac>().ActiveScan(mChannelMask, 0, HandleScanResult);
+    Get<Mac::Mac>().ActiveScan(mChannelMask, 0, HandleScanResult, this);
     mChannelMask = 0;
 }
 

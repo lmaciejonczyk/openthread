@@ -34,9 +34,22 @@
 #ifndef RADIO_SPINEL_HPP_
 #define RADIO_SPINEL_HPP_
 
+#include "openthread-posix-config.h"
+
 #include <openthread/platform/radio.h>
 
+#if OPENTHREAD_POSIX_RCP_UART_ENABLE
 #include "hdlc_interface.hpp"
+#endif
+
+#if OPENTHREAD_POSIX_RCP_SPI_ENABLE
+#include "spi_interface.hpp"
+#endif
+
+#if !OPENTHREAD_POSIX_RCP_UART_ENABLE && !OPENTHREAD_POSIX_RCP_SPI_ENABLE
+#error "Please enable either OPENTHREAD_POSIX_RCP_UART_ENABLE or OPENTHREAD_POSIX_RCP_SPI_ENABLE."
+#endif
+
 #include "spinel_interface.hpp"
 #include "ncp/ncp_config.h"
 #include "ncp/spinel.h"
@@ -219,6 +232,14 @@ public:
      *
      */
     int8_t GetReceiveSensitivity(void) const { return mRxSensitivity; }
+
+    /**
+     * This method gets current state of the radio.
+     *
+     * @return  Current state of the radio.
+     *
+     */
+    otRadioState GetState(void) const;
 
 #if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
     /**
@@ -522,7 +543,7 @@ public:
 private:
     enum
     {
-        kMaxSpinelFrame        = HdlcInterface::kMaxFrameSize,
+        kMaxSpinelFrame        = SpinelInterface::kMaxFrameSize,
         kMaxWaitTime           = 2000, ///< Max time to wait for response in milliseconds.
         kVersionStringSize     = 128,  ///< Max size of version string.
         kCapsBufferSize        = 100,  ///< Max buffer size used to store `SPINEL_PROP_CAPS` value.
@@ -538,8 +559,10 @@ private:
         kStateTransmitDone, ///< Radio indicated frame transmission is done.
     };
 
+    typedef otError (RadioSpinel::*ResponseHandler)(const uint8_t *aBuffer, uint16_t aLength);
+
     otError CheckSpinelVersion(void);
-    otError CheckCapabilities(void);
+    otError CheckCapabilities(bool &aIsRcp);
     otError CheckRadioCapabilities(void);
     void    ProcessFrameQueue(void);
 
@@ -612,6 +635,7 @@ private:
                         const char *      pack_format,
                         va_list           args);
     otError ParseRadioFrame(otRadioFrame &aFrame, const uint8_t *aBuffer, uint16_t aLength);
+    otError ThreadDatasetHandler(const uint8_t *aBuffer, uint16_t aLength);
 
     /**
      * This method returns if the property changed event is safe to be handled now.
@@ -629,7 +653,7 @@ private:
         return !(aKey == SPINEL_PROP_STREAM_RAW || aKey == SPINEL_PROP_MAC_ENERGY_SCAN_RESULT);
     }
 
-    void HandleNotification(HdlcInterface::RxFrameBuffer &aFrameBuffer);
+    void HandleNotification(SpinelInterface::RxFrameBuffer &aFrameBuffer);
     void HandleNotification(const uint8_t *aBuffer, uint16_t aLength);
     void HandleValueIs(spinel_prop_key_t aKey, const uint8_t *aBuffer, uint16_t aLength);
 
@@ -641,9 +665,28 @@ private:
 
     void TransmitDone(otRadioFrame *aFrame, otRadioFrame *aAckFrame, otError aError);
 
+    /**
+     * This method gets dataset from NCP radio and saves it.
+     *
+     * @retval  OT_ERROR_NONE               Successfully restore dataset.
+     * @retval  OT_ERROR_BUSY               Failed due to another operation is on going.
+     * @retval  OT_ERROR_RESPONSE_TIMEOUT   Failed due to no response received from the transceiver.
+     * @retval  OT_ERROR_NOT_FOUND          Failed due to spinel property not supported in radio.
+     * @retval  OT_ERROR_FAILED             Failed due to other reasons.
+     */
+    otError RestoreDatasetFromNcp(void);
+
     otInstance *mInstance;
 
-    HdlcInterface mHdlcInterface;
+    SpinelInterface::RxFrameBuffer mRxFrameBuffer;
+
+#if OPENTHREAD_POSIX_RCP_UART_ENABLE
+    HdlcInterface mSpinelInterface;
+#endif
+
+#if OPENTHREAD_POSIX_RCP_SPI_ENABLE
+    SpiInterface mSpinelInterface;
+#endif
 
     uint16_t          mCmdTidsInUse;    ///< Used transaction ids.
     spinel_tid_t      mCmdNextTid;      ///< Next available transaction id.

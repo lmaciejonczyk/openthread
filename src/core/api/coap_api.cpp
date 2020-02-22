@@ -110,6 +110,21 @@ otError otCoapMessageAppendUriPathOptions(otMessage *aMessage, const char *aUriP
     return static_cast<Coap::Message *>(aMessage)->AppendUriPathOptions(aUriPath);
 }
 
+uint16_t otCoapBlockSizeFromExponent(otCoapBlockSize aSize)
+{
+    return static_cast<uint16_t>(1 << (aSize + Coap::Message::kBlockSzxBase));
+}
+
+otError otCoapMessageAppendBlock2Option(otMessage *aMessage, uint32_t aNum, bool aMore, otCoapBlockSize aSize)
+{
+    return static_cast<Coap::Message *>(aMessage)->AppendBlockOption(Coap::Message::kBlockType2, aNum, aMore, aSize);
+}
+
+otError otCoapMessageAppendBlock1Option(otMessage *aMessage, uint32_t aNum, bool aMore, otCoapBlockSize aSize)
+{
+    return static_cast<Coap::Message *>(aMessage)->AppendBlockOption(Coap::Message::kBlockType1, aNum, aMore, aSize);
+}
+
 otError otCoapMessageAppendProxyUriOption(otMessage *aMessage, const char *aUriPath)
 {
     return static_cast<Coap::Message *>(aMessage)->AppendProxyUriOption(aUriPath);
@@ -160,19 +175,24 @@ const uint8_t *otCoapMessageGetToken(const otMessage *aMessage)
     return static_cast<const Coap::Message *>(aMessage)->GetToken();
 }
 
-const otCoapOption *otCoapMessageGetFirstOption(otMessage *aMessage)
+otError otCoapOptionIteratorInit(otCoapOptionIterator *aIterator, const otMessage *aMessage)
 {
-    return static_cast<Coap::Message *>(aMessage)->GetFirstOption();
+    return static_cast<Coap::OptionIterator *>(aIterator)->Init(static_cast<const Coap::Message *>(aMessage));
 }
 
-const otCoapOption *otCoapMessageGetNextOption(otMessage *aMessage)
+const otCoapOption *otCoapOptionIteratorGetFirstOption(otCoapOptionIterator *aIterator)
 {
-    return static_cast<Coap::Message *>(aMessage)->GetNextOption();
+    return static_cast<Coap::OptionIterator *>(aIterator)->GetFirstOption();
 }
 
-otError otCoapMessageGetOptionValue(otMessage *aMessage, void *aValue)
+const otCoapOption *otCoapOptionIteratorGetNextOption(otCoapOptionIterator *aIterator)
 {
-    return static_cast<Coap::Message *>(aMessage)->GetOptionValue(aValue);
+    return static_cast<Coap::OptionIterator *>(aIterator)->GetNextOption();
+}
+
+otError otCoapOptionIteratorGetOptionValue(otCoapOptionIterator *aIterator, void *aValue)
+{
+    return static_cast<Coap::OptionIterator *>(aIterator)->GetOptionValue(aValue);
 }
 
 otError otCoapSendRequest(otInstance *          aInstance,

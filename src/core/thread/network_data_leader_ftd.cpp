@@ -341,7 +341,7 @@ void Leader::SendCommissioningGetResponse(const Coap::Message &   aRequest,
             {
                 if (cur->GetType() == type)
                 {
-                    SuccessOrExit(error = message->AppendTlv(*cur));
+                    SuccessOrExit(error = cur->AppendTo(*message));
                     break;
                 }
             }
@@ -381,7 +381,7 @@ void Leader::SendCommissioningSetResponse(const Coap::Message &    aRequest,
 
     state.Init();
     state.SetState(aState);
-    SuccessOrExit(error = message->AppendTlv(state));
+    SuccessOrExit(error = state.AppendTo(*message));
 
     SuccessOrExit(error = Get<Coap::Coap>().SendMessage(*message, aMessageInfo));
 
@@ -726,6 +726,8 @@ otError Leader::RegisterNetworkData(uint16_t aRloc16, uint8_t *aTlvs, uint8_t aT
     bool    unused;
     uint8_t oldTlvs[NetworkData::kMaxSize];
     uint8_t oldTlvsLength = NetworkData::kMaxSize;
+
+    VerifyOrExit(Get<RouterTable>().IsAllocated(Mle::Mle::RouterIdFromRloc16(aRloc16)), error = OT_ERROR_NO_ROUTE);
 
     // Verify that `aTlvs` only contains entries matching `aRloc16`.
     SuccessOrExit(error = RlocLookup(aRloc16, rlocIn, rlocStable, aTlvs, aTlvsLength, kMatchModeRloc16,

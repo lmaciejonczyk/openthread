@@ -31,10 +31,10 @@
  *   This file implements the spinel based radio transceiver.
  */
 
-#include "openthread-core-config.h"
-#include "platform-posix.h"
-
 #include "radio_spinel.hpp"
+
+#include "platform-posix.h"
+#include "ncp/spinel_decoder.hpp"
 
 #include <assert.h>
 #include <errno.h>
@@ -48,13 +48,19 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <common/code_utils.hpp>
-#include <common/encoding.hpp>
-#include <common/logging.hpp>
-#include <common/new.hpp>
+#include <openthread/dataset.h>
 #include <openthread/platform/alarm-milli.h>
 #include <openthread/platform/diag.h>
 #include <openthread/platform/radio.h>
+#include <openthread/platform/settings.h>
+
+#include "common/code_utils.hpp"
+#include "common/encoding.hpp"
+#include "common/logging.hpp"
+#include "common/new.hpp"
+#include "common/settings.hpp"
+#include "meshcop/dataset.hpp"
+#include "meshcop/meshcop_tlvs.hpp"
 
 #ifndef TX_WAIT_US
 #define TX_WAIT_US (5 * US_PER_S)
@@ -150,9 +156,15 @@ static void LogIfFail(const char *aText, otError aError)
     }
 }
 
+void SpinelInterface::Callbacks::HandleReceivedFrame(void)
+{
+    static_cast<RadioSpinel *>(this)->HandleReceivedFrame();
+}
+
 RadioSpinel::RadioSpinel(void)
     : mInstance(NULL)
-    , mHdlcInterface(*this)
+    , mRxFrameBuffer()
+    , mSpinelInterface(*this, mRxFrameBuffer)
     , mCmdTidsInUse(0)
     , mCmdNextTid(1)
     , mTxRadioTid(0)
@@ -184,8 +196,9 @@ RadioSpinel::RadioSpinel(void)
 void RadioSpinel::Init(const otPlatformConfig &aPlatformConfig)
 {
     otError error = OT_ERROR_NONE;
+    bool    isRcp;
 
-    SuccessOrExit(error = mHdlcInterface.Init(aPlatformConfig));
+    SuccessOrExit(error = mSpinelInterface.Init(aPlatformConfig));
 
     if (aPlatformConfig.mResetRadio)
     {
@@ -196,13 +209,18 @@ void RadioSpinel::Init(const otPlatformConfig &aPlatformConfig)
     VerifyOrExit(mIsReady, error = OT_ERROR_FAILED);
 
     SuccessOrExit(error = CheckSpinelVersion());
-    SuccessOrExit(error = CheckCapabilities());
-    SuccessOrExit(error = CheckRadioCapabilities());
-
+    SuccessOrExit(error = CheckCapabilities(isRcp));
     SuccessOrExit(error = Get(SPINEL_PROP_NCP_VERSION, SPINEL_DATATYPE_UTF8_S, mVersion, sizeof(mVersion)));
     SuccessOrExit(error = Get(SPINEL_PROP_HWADDR, SPINEL_DATATYPE_UINT64_S, &gNodeId));
 
     gNodeId = ot::Encoding::BigEndian::HostSwap64(gNodeId);
+
+    if (aPlatformConfig.mRestoreDatasetFromNcp && !isRcp)
+    {
+        DieNow((RestoreDatasetFromNcp() == OT_ERROR_NONE) ? OT_EXIT_SUCCESS : OT_EXIT_FAILURE);
+    }
+
+    SuccessOrExit(error = CheckRadioCapabilities());
 
     mRxRadioFrame.mPsdu  = mRxPsdu;
     mTxRadioFrame.mPsdu  = mTxPsdu;
@@ -234,7 +252,7 @@ exit:
     return error;
 }
 
-otError RadioSpinel::CheckCapabilities(void)
+otError RadioSpinel::CheckCapabilities(bool &aIsRcp)
 {
     otError        error = OT_ERROR_NONE;
     uint8_t        capsBuffer[kCapsBufferSize];
@@ -243,6 +261,8 @@ otError RadioSpinel::CheckCapabilities(void)
     bool           supportsRawRadio = false;
 
     SuccessOrExit(error = Get(SPINEL_PROP_CAPS, SPINEL_DATATYPE_DATA_S, capsBuffer, &capsLength));
+
+    aIsRcp = false;
 
     while (capsLength > 0)
     {
@@ -262,11 +282,16 @@ otError RadioSpinel::CheckCapabilities(void)
             supportsRawRadio = true;
         }
 
+        if (capability == SPINEL_CAP_CONFIG_RADIO)
+        {
+            aIsRcp = true;
+        }
+
         capsData += unpacked;
         capsLength -= static_cast<spinel_size_t>(unpacked);
     }
 
-    if (!supportsRawRadio)
+    if (!supportsRawRadio && aIsRcp)
     {
         otLogCritPlat("RCP capability list does not include support for radio/raw mode");
         DieNow(OT_EXIT_RADIO_SPINEL_INCOMPATIBLE);
@@ -301,21 +326,37 @@ exit:
     return error;
 }
 
+otError RadioSpinel::RestoreDatasetFromNcp(void)
+{
+    otError error = OT_ERROR_NONE;
+
+    otPlatSettingsInit(mInstance);
+
+    otLogInfoPlat("Trying to get saved dataset from NCP");
+    SuccessOrExit(
+        error = Get(SPINEL_PROP_THREAD_ACTIVE_DATASET, SPINEL_DATATYPE_VOID_S, &RadioSpinel::ThreadDatasetHandler));
+    SuccessOrExit(
+        error = Get(SPINEL_PROP_THREAD_PENDING_DATASET, SPINEL_DATATYPE_VOID_S, &RadioSpinel::ThreadDatasetHandler));
+
+exit:
+    otPlatSettingsDeinit(mInstance);
+    return error;
+}
+
 void RadioSpinel::Deinit(void)
 {
-    mHdlcInterface.Deinit();
+    mSpinelInterface.Deinit();
     // This allows implementing pseudo reset.
     new (this) RadioSpinel();
 }
 
 void RadioSpinel::HandleReceivedFrame(void)
 {
-    otError                         error       = OT_ERROR_NONE;
-    SpinelInterface::RxFrameBuffer &frameBuffer = mHdlcInterface.GetRxFrameBuffer();
-    uint8_t                         header;
-    spinel_ssize_t                  unpacked;
+    otError        error = OT_ERROR_NONE;
+    uint8_t        header;
+    spinel_ssize_t unpacked;
 
-    unpacked = spinel_datatype_unpack(frameBuffer.GetFrame(), frameBuffer.GetLength(), "C", &header);
+    unpacked = spinel_datatype_unpack(mRxFrameBuffer.GetFrame(), mRxFrameBuffer.GetLength(), "C", &header);
 
     VerifyOrExit(unpacked > 0 && (header & SPINEL_HEADER_FLAG) == SPINEL_HEADER_FLAG &&
                      SPINEL_HEADER_GET_IID(header) == 0,
@@ -323,23 +364,23 @@ void RadioSpinel::HandleReceivedFrame(void)
 
     if (SPINEL_HEADER_GET_TID(header) == 0)
     {
-        HandleNotification(frameBuffer);
+        HandleNotification(mRxFrameBuffer);
     }
     else
     {
-        HandleResponse(frameBuffer.GetFrame(), frameBuffer.GetLength());
-        frameBuffer.DiscardFrame();
+        HandleResponse(mRxFrameBuffer.GetFrame(), mRxFrameBuffer.GetLength());
+        mRxFrameBuffer.DiscardFrame();
     }
 
 exit:
     if (error != OT_ERROR_NONE)
     {
-        frameBuffer.DiscardFrame();
+        mRxFrameBuffer.DiscardFrame();
         otLogWarnPlat("Error handling hdlc frame: %s", otThreadErrorToString(error));
     }
 }
 
-void RadioSpinel::HandleNotification(HdlcInterface::RxFrameBuffer &aFrameBuffer)
+void RadioSpinel::HandleNotification(SpinelInterface::RxFrameBuffer &aFrameBuffer)
 {
     spinel_prop_key_t key;
     spinel_size_t     len = 0;
@@ -452,6 +493,159 @@ exit:
     LogIfFail("Error processing response", error);
 }
 
+otError RadioSpinel::ThreadDatasetHandler(const uint8_t *aBuffer, uint16_t aLength)
+{
+    otError              error = OT_ERROR_NONE;
+    otOperationalDataset opDataset;
+    bool                 isActive = ((mWaitingKey == SPINEL_PROP_THREAD_ACTIVE_DATASET) ? true : false);
+    Ncp::SpinelDecoder   decoder;
+    MeshCoP::Dataset     dataset(isActive ? MeshCoP::Tlv::kActiveTimestamp : MeshCoP::Tlv::kPendingTimestamp);
+
+    memset(&opDataset, 0, sizeof(otOperationalDataset));
+    decoder.Init(aBuffer, aLength);
+
+    while (!decoder.IsAllReadInStruct())
+    {
+        unsigned int propKey;
+
+        SuccessOrExit(error = decoder.OpenStruct());
+        SuccessOrExit(error = decoder.ReadUintPacked(propKey));
+
+        switch (static_cast<spinel_prop_key_t>(propKey))
+        {
+        case SPINEL_PROP_NET_MASTER_KEY:
+        {
+            const uint8_t *key;
+            uint16_t       len;
+
+            SuccessOrExit(error = decoder.ReadData(key, len));
+            VerifyOrExit(len == OT_MASTER_KEY_SIZE, error = OT_ERROR_INVALID_ARGS);
+            memcpy(opDataset.mMasterKey.m8, key, len);
+            opDataset.mComponents.mIsMasterKeyPresent = true;
+            break;
+        }
+
+        case SPINEL_PROP_NET_NETWORK_NAME:
+        {
+            const char *name;
+            size_t      len;
+
+            SuccessOrExit(error = decoder.ReadUtf8(name));
+            len = StringLength(name, OT_NETWORK_NAME_MAX_SIZE);
+            memcpy(opDataset.mNetworkName.m8, name, len);
+            opDataset.mNetworkName.m8[len]              = '\0';
+            opDataset.mComponents.mIsNetworkNamePresent = true;
+            break;
+        }
+
+        case SPINEL_PROP_NET_XPANID:
+        {
+            const uint8_t *xpanid;
+            uint16_t       len;
+
+            SuccessOrExit(error = decoder.ReadData(xpanid, len));
+            VerifyOrExit(len == OT_EXT_PAN_ID_SIZE, error = OT_ERROR_INVALID_ARGS);
+            memcpy(opDataset.mExtendedPanId.m8, xpanid, len);
+            opDataset.mComponents.mIsExtendedPanIdPresent = true;
+            break;
+        }
+
+        case SPINEL_PROP_IPV6_ML_PREFIX:
+        {
+            const otIp6Address *addr;
+            uint8_t             prefixLen;
+
+            SuccessOrExit(error = decoder.ReadIp6Address(addr));
+            SuccessOrExit(error = decoder.ReadUint8(prefixLen));
+            VerifyOrExit(prefixLen == OT_IP6_PREFIX_BITSIZE, error = OT_ERROR_INVALID_ARGS);
+            memcpy(opDataset.mMeshLocalPrefix.m8, addr, OT_MESH_LOCAL_PREFIX_SIZE);
+            opDataset.mComponents.mIsMeshLocalPrefixPresent = true;
+            break;
+        }
+
+        case SPINEL_PROP_DATASET_DELAY_TIMER:
+        {
+            SuccessOrExit(error = decoder.ReadUint32(opDataset.mDelay));
+            opDataset.mComponents.mIsDelayPresent = true;
+            break;
+        }
+
+        case SPINEL_PROP_MAC_15_4_PANID:
+        {
+            SuccessOrExit(error = decoder.ReadUint16(opDataset.mPanId));
+            opDataset.mComponents.mIsPanIdPresent = true;
+            break;
+        }
+
+        case SPINEL_PROP_PHY_CHAN:
+        {
+            uint8_t channel;
+
+            SuccessOrExit(error = decoder.ReadUint8(channel));
+            opDataset.mChannel                      = channel;
+            opDataset.mComponents.mIsChannelPresent = true;
+            break;
+        }
+
+        case SPINEL_PROP_NET_PSKC:
+        {
+            const uint8_t *psk;
+            uint16_t       len;
+
+            SuccessOrExit(error = decoder.ReadData(psk, len));
+            VerifyOrExit(len == OT_PSKC_MAX_SIZE, error = OT_ERROR_INVALID_ARGS);
+            memcpy(opDataset.mPskc.m8, psk, OT_PSKC_MAX_SIZE);
+            opDataset.mComponents.mIsPskcPresent = true;
+            break;
+        }
+
+        case SPINEL_PROP_DATASET_SECURITY_POLICY:
+        {
+            SuccessOrExit(error = decoder.ReadUint16(opDataset.mSecurityPolicy.mRotationTime));
+            SuccessOrExit(error = decoder.ReadUint8(opDataset.mSecurityPolicy.mFlags));
+            opDataset.mComponents.mIsSecurityPolicyPresent = true;
+            break;
+        }
+
+        case SPINEL_PROP_PHY_CHAN_SUPPORTED:
+        {
+            uint8_t channel;
+
+            opDataset.mChannelMask = 0;
+
+            while (!decoder.IsAllReadInStruct())
+            {
+                SuccessOrExit(error = decoder.ReadUint8(channel));
+                VerifyOrExit(channel <= 31, error = OT_ERROR_INVALID_ARGS);
+                opDataset.mChannelMask |= (1UL << channel);
+            }
+            opDataset.mComponents.mIsChannelMaskPresent = true;
+            break;
+        }
+
+        default:
+            break;
+        }
+
+        SuccessOrExit(error = decoder.CloseStruct());
+    }
+
+    /*
+     * Initially set Active Timestamp to 0. This is to allow the node to join the network
+     * yet retrieve the full Active Dataset from a neighboring device if one exists.
+     */
+    opDataset.mActiveTimestamp                      = 0;
+    opDataset.mComponents.mIsActiveTimestampPresent = true;
+
+    SuccessOrExit(error = dataset.Set(opDataset));
+    SuccessOrExit(error = otPlatSettingsSet(
+                      mInstance, isActive ? SettingsBase::kKeyActiveDataset : SettingsBase::kKeyPendingDataset,
+                      dataset.GetBytes(), dataset.GetSize()));
+
+exit:
+    return error;
+}
+
 void RadioSpinel::HandleWaitingResponse(uint32_t          aCommand,
                                         spinel_prop_key_t aKey,
                                         const uint8_t *   aBuffer,
@@ -480,11 +674,22 @@ void RadioSpinel::HandleWaitingResponse(uint32_t          aCommand,
     {
         if (mPropertyFormat)
         {
-            spinel_ssize_t unpacked =
-                spinel_datatype_vunpack_in_place(aBuffer, aLength, mPropertyFormat, mPropertyArgs);
+            if (static_cast<spinel_datatype_t>(mPropertyFormat[0]) == SPINEL_DATATYPE_VOID_C)
+            {
+                // reserved SPINEL_DATATYPE_VOID_C indicate caller want to parse the spinel response itself
+                ResponseHandler handler = va_arg(mPropertyArgs, ResponseHandler);
 
-            VerifyOrExit(unpacked > 0, mError = OT_ERROR_PARSE);
-            mError = OT_ERROR_NONE;
+                assert(handler != NULL);
+                mError = (this->*handler)(aBuffer, aLength);
+            }
+            else
+            {
+                spinel_ssize_t unpacked =
+                    spinel_datatype_vunpack_in_place(aBuffer, aLength, mPropertyFormat, mPropertyArgs);
+
+                VerifyOrExit(unpacked > 0, mError = OT_ERROR_PARSE);
+                mError = OT_ERROR_NONE;
+            }
         }
         else
         {
@@ -658,12 +863,12 @@ void RadioSpinel::ProcessFrameQueue(void)
     uint8_t *frame = NULL;
     uint16_t length;
 
-    while (mHdlcInterface.GetRxFrameBuffer().GetNextSavedFrame(frame, length) == OT_ERROR_NONE)
+    while (mRxFrameBuffer.GetNextSavedFrame(frame, length) == OT_ERROR_NONE)
     {
         HandleNotification(frame, length);
     }
 
-    mHdlcInterface.GetRxFrameBuffer().ClearSavedFrames();
+    mRxFrameBuffer.ClearSavedFrames();
 }
 
 void RadioSpinel::RadioReceive(void)
@@ -714,7 +919,7 @@ void RadioSpinel::TransmitDone(otRadioFrame *aFrame, otRadioFrame *aAckFrame, ot
 
 void RadioSpinel::UpdateFdSet(fd_set &aReadFdSet, fd_set &aWriteFdSet, int &aMaxFd, struct timeval &aTimeout)
 {
-    mHdlcInterface.UpdateFdSet(aReadFdSet, aWriteFdSet, aMaxFd, aTimeout);
+    mSpinelInterface.UpdateFdSet(aReadFdSet, aWriteFdSet, aMaxFd, aTimeout);
 
     if (mState == kStateTransmitting)
     {
@@ -737,7 +942,7 @@ void RadioSpinel::UpdateFdSet(fd_set &aReadFdSet, fd_set &aWriteFdSet, int &aMax
         }
     }
 
-    if (mHdlcInterface.GetRxFrameBuffer().HasSavedFrame() || (mState == kStateTransmitDone))
+    if (mRxFrameBuffer.HasSavedFrame() || (mState == kStateTransmitDone))
     {
         aTimeout.tv_sec  = 0;
         aTimeout.tv_usec = 0;
@@ -746,15 +951,15 @@ void RadioSpinel::UpdateFdSet(fd_set &aReadFdSet, fd_set &aWriteFdSet, int &aMax
 
 void RadioSpinel::Process(const fd_set &aReadFdSet, const fd_set &aWriteFdSet)
 {
-    if (mHdlcInterface.GetRxFrameBuffer().HasSavedFrame())
+    if (mRxFrameBuffer.HasSavedFrame())
     {
         // Handle frames received and saved during `WaitResponse()`
         ProcessFrameQueue();
     }
 
-    mHdlcInterface.Process(aReadFdSet, aWriteFdSet);
+    mSpinelInterface.Process(aReadFdSet, aWriteFdSet);
 
-    if (mHdlcInterface.GetRxFrameBuffer().HasSavedFrame())
+    if (mRxFrameBuffer.HasSavedFrame())
     {
         ProcessFrameQueue();
     }
@@ -1036,7 +1241,7 @@ otError RadioSpinel::WaitResponse(void)
 
     do
     {
-        if (mHdlcInterface.WaitForFrame(timeout) == OT_ERROR_RESPONSE_TIMEOUT)
+        if (mSpinelInterface.WaitForFrame(timeout) == OT_ERROR_RESPONSE_TIMEOUT)
         {
             FreeTid(mWaitingTid);
             mWaitingTid = 0;
@@ -1092,7 +1297,7 @@ otError RadioSpinel::SendReset(void)
 
     VerifyOrExit(packed > 0 && static_cast<size_t>(packed) <= sizeof(buffer), error = OT_ERROR_NO_BUFS);
 
-    SuccessOrExit(error = mHdlcInterface.SendFrame(buffer, static_cast<uint16_t>(packed)));
+    SuccessOrExit(error = mSpinelInterface.SendFrame(buffer, static_cast<uint16_t>(packed)));
 
     sleep(0);
 
@@ -1128,7 +1333,7 @@ otError RadioSpinel::SendCommand(uint32_t          aCommand,
         offset += static_cast<uint16_t>(packed);
     }
 
-    error = mHdlcInterface.SendFrame(buffer, offset);
+    error = mSpinelInterface.SendFrame(buffer, offset);
 
 exit:
     return error;
@@ -1393,6 +1598,16 @@ exit:
     return channelMask;
 }
 
+otRadioState RadioSpinel::GetState(void) const
+{
+    static const otRadioState sOtRadioStateMap[] = {
+        OT_RADIO_STATE_DISABLED, OT_RADIO_STATE_SLEEP,    OT_RADIO_STATE_RECEIVE,
+        OT_RADIO_STATE_TRANSMIT, OT_RADIO_STATE_TRANSMIT,
+    };
+
+    return sOtRadioStateMap[mState];
+}
+
 } // namespace PosixApp
 } // namespace ot
 
@@ -1644,7 +1859,7 @@ exit:
 #if OPENTHREAD_POSIX_VIRTUAL_TIME
 void ot::PosixApp::RadioSpinel::Process(const Event &aEvent)
 {
-    if (mHdlcInterface.GetRxFrameBuffer().HasSavedFrame())
+    if (mRxFrameBuffer.HasSavedFrame())
     {
         ProcessFrameQueue();
     }
@@ -1652,10 +1867,10 @@ void ot::PosixApp::RadioSpinel::Process(const Event &aEvent)
     // The current event can be other event types
     if (aEvent.mEvent == OT_SIM_EVENT_RADIO_SPINEL_WRITE)
     {
-        mHdlcInterface.ProcessReadData(aEvent.mData, aEvent.mDataLength);
+        mSpinelInterface.ProcessReadData(aEvent.mData, aEvent.mDataLength);
     }
 
-    if (mHdlcInterface.GetRxFrameBuffer().HasSavedFrame())
+    if (mRxFrameBuffer.HasSavedFrame())
     {
         ProcessFrameQueue();
     }
@@ -1674,7 +1889,7 @@ void ot::PosixApp::RadioSpinel::Process(const Event &aEvent)
     }
 }
 
-void platformSimRadioSpinelProcess(otInstance *aInstance, const struct Event *aEvent)
+void virtualTimeRadioSpinelProcess(otInstance *aInstance, const struct Event *aEvent)
 {
     sRadioSpinel.Process(*aEvent);
     OT_UNUSED_VARIABLE(aInstance);
@@ -1759,16 +1974,8 @@ uint32_t otPlatRadioGetPreferredChannelMask(otInstance *aInstance)
     return sRadioSpinel.GetRadioChannelMask(true);
 }
 
-/*
- * Calling a pure virtual function is illegal. If the code calls a pure virtual function, then the compiler
- * calls the function "__cxa_pure_virtual()" to handle it. The call to this function should never happen in
- * the normal application run. If it happens it means there is a bug.
- *
- * This function is defined here to avoid that some libraries don't define it when COVERAGE is set to 1.
- *
- */
-extern "C" void __cxa_pure_virtual()
+otRadioState otPlatRadioGetState(otInstance *aInstance)
 {
-    otLogCritPlat("__cxa_pure_virtual() is called");
-    exit(OT_EXIT_FAILURE);
+    OT_UNUSED_VARIABLE(aInstance);
+    return sRadioSpinel.GetState();
 }

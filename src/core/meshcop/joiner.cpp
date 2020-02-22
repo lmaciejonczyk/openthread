@@ -163,11 +163,11 @@ void Joiner::Finish(otError aError)
 
     case OT_JOINER_STATE_DISCOVER:
         Get<Coap::CoapSecure>().Stop();
-        FreeJoinerFinalizeMessage();
         break;
     }
 
     SetState(OT_JOINER_STATE_IDLE);
+    FreeJoinerFinalizeMessage();
 
     if (mCallback)
     {
@@ -402,33 +402,33 @@ otError Joiner::PrepareJoinerFinalizeMessage(const char *aProvisioningUrl,
 
     stateTlv.Init();
     stateTlv.SetState(MeshCoP::StateTlv::kAccept);
-    SuccessOrExit(error = mFinalizeMessage->AppendTlv(stateTlv));
+    SuccessOrExit(error = stateTlv.AppendTo(*mFinalizeMessage));
 
     vendorNameTlv.Init();
     vendorNameTlv.SetVendorName(aVendorName);
-    SuccessOrExit(error = mFinalizeMessage->AppendTlv(vendorNameTlv));
+    SuccessOrExit(error = vendorNameTlv.AppendTo(*mFinalizeMessage));
 
     vendorModelTlv.Init();
     vendorModelTlv.SetVendorModel(aVendorModel);
-    SuccessOrExit(error = mFinalizeMessage->AppendTlv(vendorModelTlv));
+    SuccessOrExit(error = vendorModelTlv.AppendTo(*mFinalizeMessage));
 
     vendorSwVersionTlv.Init();
     vendorSwVersionTlv.SetVendorSwVersion(aVendorSwVersion);
-    SuccessOrExit(error = mFinalizeMessage->AppendTlv(vendorSwVersionTlv));
+    SuccessOrExit(error = vendorSwVersionTlv.AppendTo(*mFinalizeMessage));
 
     vendorStackVersionTlv.Init();
     vendorStackVersionTlv.SetOui(OPENTHREAD_CONFIG_STACK_VENDOR_OUI);
     vendorStackVersionTlv.SetMajor(OPENTHREAD_CONFIG_STACK_VERSION_MAJOR);
     vendorStackVersionTlv.SetMinor(OPENTHREAD_CONFIG_STACK_VERSION_MINOR);
     vendorStackVersionTlv.SetRevision(OPENTHREAD_CONFIG_STACK_VERSION_REV);
-    SuccessOrExit(error = mFinalizeMessage->AppendTlv(vendorStackVersionTlv));
+    SuccessOrExit(error = vendorStackVersionTlv.AppendTo(*mFinalizeMessage));
 
     if (aVendorData != NULL)
     {
         VendorDataTlv vendorDataTlv;
         vendorDataTlv.Init();
         vendorDataTlv.SetVendorData(aVendorData);
-        SuccessOrExit(error = mFinalizeMessage->AppendTlv(vendorDataTlv));
+        SuccessOrExit(error = vendorDataTlv.AppendTo(*mFinalizeMessage));
     }
 
     provisioningUrlTlv.Init();
@@ -436,7 +436,7 @@ otError Joiner::PrepareJoinerFinalizeMessage(const char *aProvisioningUrl,
 
     if (provisioningUrlTlv.GetLength() > 0)
     {
-        SuccessOrExit(error = mFinalizeMessage->AppendTlv(provisioningUrlTlv));
+        SuccessOrExit(error = provisioningUrlTlv.AppendTo(*mFinalizeMessage));
     }
 
 exit:
@@ -450,11 +450,13 @@ exit:
 
 void Joiner::FreeJoinerFinalizeMessage(void)
 {
-    if (mFinalizeMessage != NULL)
-    {
-        mFinalizeMessage->Free();
-        mFinalizeMessage = NULL;
-    }
+    VerifyOrExit(mState == OT_JOINER_STATE_IDLE && mFinalizeMessage != NULL);
+
+    mFinalizeMessage->Free();
+    mFinalizeMessage = NULL;
+
+exit:
+    return;
 }
 
 void Joiner::SendJoinerFinalize(void)

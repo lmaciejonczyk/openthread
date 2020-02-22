@@ -6,7 +6,7 @@
  *  modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- >*  2. Redistributions in binary form must reproduce the above copyright
+ *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
  *  3. Neither the name of the copyright holder nor the
@@ -34,6 +34,8 @@
 
 #ifndef OPENTHREAD_CORE_DEFAULT_CONFIG_H_
 #define OPENTHREAD_CORE_DEFAULT_CONFIG_H_
+
+#include "config/coap.h"
 
 /**
  * @def OPENTHREAD_CONFIG_STACK_VENDOR_OUI
@@ -241,6 +243,20 @@
 #endif
 
 /**
+ * @def OPENTHREAD_CONFIG_ENABLE_BUILTIN_MBEDTLS_MANAGEMENT
+ *
+ * Define as 1 to enable bultin mbedtls management.
+ *
+ * OPENTHREAD_CONFIG_ENABLE_BUILTIN_MBEDTLS_MANAGEMENT determines whether to manage mbedTLS memory
+ * allocation and debug config internally.  If not configured, the default is to enable builtin
+ * management if builtin mbedtls is enabled and disable it otherwise.
+ *
+ */
+#ifndef OPENTHREAD_CONFIG_ENABLE_BUILTIN_MBEDTLS_MANAGEMENT
+#define OPENTHREAD_CONFIG_ENABLE_BUILTIN_MBEDTLS_MANAGEMENT OPENTHREAD_CONFIG_ENABLE_BUILTIN_MBEDTLS
+#endif
+
+/**
  * @def OPENTHREAD_CONFIG_HEAP_INTERNAL_SIZE
  *
  * The size of heap buffer when DTLS is enabled.
@@ -262,6 +278,16 @@
  */
 #ifndef OPENTHREAD_CONFIG_HEAP_INTERNAL_SIZE_NO_DTLS
 #define OPENTHREAD_CONFIG_HEAP_INTERNAL_SIZE_NO_DTLS 384
+#endif
+
+/**
+ * @def OPENTHREAD_CONFIG_HEAP_EXTERNAL_ENABLE
+ *
+ * Enable the external heap.
+ *
+ */
+#ifndef OPENTHREAD_CONFIG_HEAP_EXTERNAL_ENABLE
+#define OPENTHREAD_CONFIG_HEAP_EXTERNAL_ENABLE 0
 #endif
 
 /**

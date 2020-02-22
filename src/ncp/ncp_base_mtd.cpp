@@ -120,13 +120,12 @@ static uint8_t ExternalRoutePreferenceToFlagByte(int aPreference)
         flags = SPINEL_ROUTE_PREFERENCE_LOW;
         break;
 
-    case OT_ROUTE_PREFERENCE_MED:
-        flags = SPINEL_ROUTE_PREFERENCE_MEDIUM;
-        break;
-
     case OT_ROUTE_PREFERENCE_HIGH:
         flags = SPINEL_ROUTE_PREFERENCE_HIGH;
         break;
+
+    case OT_ROUTE_PREFERENCE_MED:
+        // fall through
 
     default:
         flags = SPINEL_ROUTE_PREFERENCE_MEDIUM;
@@ -242,19 +241,9 @@ exit:
     return error;
 }
 
-otError NcpBase::CommandHandler_NET_SAVE(uint8_t aHeader)
-{
-    return PrepareLastStatusResponse(aHeader, SPINEL_STATUS_UNIMPLEMENTED);
-}
-
 otError NcpBase::CommandHandler_NET_CLEAR(uint8_t aHeader)
 {
     return PrepareLastStatusResponse(aHeader, ThreadErrorToSpinelStatus(otInstanceErasePersistentInfo(mInstance)));
-}
-
-otError NcpBase::CommandHandler_NET_RECALL(uint8_t aHeader)
-{
-    return PrepareLastStatusResponse(aHeader, SPINEL_STATUS_UNIMPLEMENTED);
 }
 
 template <> otError NcpBase::HandlePropertyGet<SPINEL_PROP_NET_SAVED>(void)
@@ -1034,8 +1023,8 @@ otError NcpBase::EncodeOperationalDataset(const otOperationalDataset &aDataset)
 
         SuccessOrExit(mEncoder.OpenStruct());
         SuccessOrExit(mEncoder.WriteUintPacked(SPINEL_PROP_IPV6_ML_PREFIX));
-        SuccessOrExit(error = mEncoder.WriteIp6Address(addr)); // Mesh local prefix
-        SuccessOrExit(error = mEncoder.WriteUint8(64));        // Prefix length (in bits)
+        SuccessOrExit(error = mEncoder.WriteIp6Address(addr));             // Mesh local prefix
+        SuccessOrExit(error = mEncoder.WriteUint8(OT_IP6_PREFIX_BITSIZE)); // Prefix length (in bits)
         SuccessOrExit(mEncoder.CloseStruct());
     }
 
@@ -1223,7 +1212,7 @@ otError NcpBase::DecodeOperationalDataset(otOperationalDataset &aDataset,
 
                 SuccessOrExit(error = mDecoder.ReadIp6Address(addr));
                 SuccessOrExit(error = mDecoder.ReadUint8(prefixLen));
-                VerifyOrExit(prefixLen == 64, error = OT_ERROR_INVALID_ARGS);
+                VerifyOrExit(prefixLen == OT_IP6_PREFIX_BITSIZE, error = OT_ERROR_INVALID_ARGS);
                 memcpy(aDataset.mMeshLocalPrefix.m8, addr, OT_MESH_LOCAL_PREFIX_SIZE);
             }
 
@@ -1557,8 +1546,8 @@ template <> otError NcpBase::HandlePropertyGet<SPINEL_PROP_IPV6_ML_PREFIX>(void)
     // Zero out the last 8 bytes.
     memset(addr.mFields.m8 + 8, 0, 8);
 
-    SuccessOrExit(error = mEncoder.WriteIp6Address(addr)); // Mesh local prefix
-    SuccessOrExit(error = mEncoder.WriteUint8(64));        // Prefix length (in bits)
+    SuccessOrExit(error = mEncoder.WriteIp6Address(addr));             // Mesh local prefix
+    SuccessOrExit(error = mEncoder.WriteUint8(OT_IP6_PREFIX_BITSIZE)); // Prefix length (in bits)
 
 exit:
     return error;
@@ -1572,7 +1561,7 @@ template <> otError NcpBase::HandlePropertySet<SPINEL_PROP_IPV6_ML_PREFIX>(void)
 
     SuccessOrExit(error = mDecoder.ReadIp6Address(meshLocalPrefix));
     SuccessOrExit(error = mDecoder.ReadUint8(prefixLength));
-    VerifyOrExit(prefixLength == 64, error = OT_ERROR_INVALID_ARGS);
+    VerifyOrExit(prefixLength == OT_IP6_PREFIX_BITSIZE, error = OT_ERROR_INVALID_ARGS);
 
     error = otThreadSetMeshLocalPrefix(mInstance, reinterpret_cast<const otMeshLocalPrefix *>(meshLocalPrefix));
 
@@ -1959,17 +1948,7 @@ template <> otError NcpBase::HandlePropertySet<SPINEL_PROP_STREAM_NET>(void)
 
     error = otIp6Send(mInstance, message);
 
-    // `otIp6Send()` takes ownership of `message` (in both success or
-    // failure cases). `message` is set to NULL so it is not freed at
-    // exit.
-    message = NULL;
-
 exit:
-
-    if (message != NULL)
-    {
-        otMessageFree(message);
-    }
 
     if (error == OT_ERROR_NONE)
     {
@@ -2915,17 +2894,7 @@ template <> otError NcpBase::HandlePropertySet<SPINEL_PROP_STREAM_NET_INSECURE>(
 
     error = otIp6Send(mInstance, message);
 
-    // `otIp6Send()` takes ownership of `message` (in both success or
-    // failure cases). `message` is set to NULL so it is not freed at
-    // exit.
-    message = NULL;
-
 exit:
-    if (message != NULL)
-    {
-        otMessageFree(message);
-    }
-
     if (error == OT_ERROR_NONE)
     {
         mInboundInsecureIpFrameCounter++;

@@ -71,6 +71,8 @@
 #define FRAME_PENDING_OFFSET  1            ///< Byte containing pending bit (+1 for frame length byte).
 #define FRAME_PENDING_BIT     (1 << 4)     ///< Frame Pending bit.
 
+#define RSSI_SETTLE_TIME_US   40           ///< RSSI settle time in microseconds.
+
 #if defined(__ICCARM__)
 _Pragma("diag_suppress=Pe167")
 #endif
@@ -413,6 +415,12 @@ int8_t otPlatRadioGetRssi(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
 
+    // Ensure the RSSI measurement is done after RSSI settling time.
+    // This is necessary for the Channel Monitor feature which quickly switches between channels.
+    NRFX_DELAY_US(RSSI_SETTLE_TIME_US);
+
+    nrf_802154_rssi_measure_begin();
+
     return nrf_802154_rssi_last_get();
 }
 
@@ -571,7 +579,7 @@ otError otPlatRadioGetTransmitPower(otInstance *aInstance, int8_t *aPower)
     }
     else
     {
-        *aPower = sDefaultTxPower;
+        *aPower = nrf_802154_tx_power_get();
     }
 
     return error;

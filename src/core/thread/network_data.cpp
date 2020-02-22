@@ -716,7 +716,7 @@ void NetworkData::RemoveTemporaryData(uint8_t *aData, uint8_t &aDataLength, Serv
             case NetworkDataTlv::kTypeServer:
             {
                 server = static_cast<ServerTlv *>(cur);
-                server->SetServer16(Mle::Mle::GetServiceAlocFromId(aService.GetServiceID()));
+                server->SetServer16(Mle::Mle::ServiceAlocFromId(aService.GetServiceID()));
                 break;
             }
 
@@ -1000,7 +1000,7 @@ otError NetworkData::SendServerDataNotification(uint16_t aRloc16)
         ThreadRloc16Tlv rloc16Tlv;
         rloc16Tlv.Init();
         rloc16Tlv.SetRloc16(aRloc16);
-        SuccessOrExit(error = message->AppendTlv(rloc16Tlv));
+        SuccessOrExit(error = rloc16Tlv.AppendTo(*message));
     }
 
     Get<Mle::MleRouter>().GetLeaderAloc(messageInfo.GetPeerAddr());

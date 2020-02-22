@@ -123,7 +123,7 @@ void EnergyScanServer::HandleTimer(void)
     {
         // grab the lowest channel to scan
         uint32_t channelMask = mChannelMaskCurrent & ~(mChannelMaskCurrent - 1);
-        Get<Mac::Mac>().EnergyScan(channelMask, mScanDuration, HandleScanResult);
+        Get<Mac::Mac>().EnergyScan(channelMask, mScanDuration, HandleScanResult, this);
     }
     else
     {
@@ -134,12 +134,12 @@ exit:
     return;
 }
 
-void EnergyScanServer::HandleScanResult(Instance &aInstance, otEnergyScanResult *aResult)
+void EnergyScanServer::HandleScanResult(Mac::EnergyScanResult *aResult, void *aContext)
 {
-    aInstance.Get<EnergyScanServer>().HandleScanResult(aResult);
+    static_cast<EnergyScanServer *>(aContext)->HandleScanResult(aResult);
 }
 
-void EnergyScanServer::HandleScanResult(otEnergyScanResult *aResult)
+void EnergyScanServer::HandleScanResult(Mac::EnergyScanResult *aResult)
 {
     VerifyOrExit(mActive);
 
@@ -187,7 +187,7 @@ otError EnergyScanServer::SendReport(void)
 
     channelMask.Init();
     channelMask.SetChannelMask(mChannelMask);
-    SuccessOrExit(error = message->AppendTlv(channelMask));
+    SuccessOrExit(error = channelMask.AppendTo(*message));
 
     energyList.Init();
     energyList.SetLength(mScanResultsLength);
