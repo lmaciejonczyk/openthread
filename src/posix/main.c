@@ -88,8 +88,8 @@ typedef struct PosixConfig
     bool             mIsVerbose;         ///< Whether to print log to stderr.
 } PosixConfig;
 
-const char *aUrlProtocols[] = {"hdlc", "spi", "spinel", "uart", "forkpty"};
-const char *aUrlArgs[] = {"speed",           "cstopb",         "parity",          "flow", "arg",      "gpio-int-dev",
+const char *gUrlProtocols[] = {"hdlc", "spi", "spinel", "uart", "forkpty"};
+const char *gUrlArgs[] = {"speed",           "cstopb",         "parity",          "flow", "arg",      "gpio-int-dev",
                           "gpio-int-line",   "gpio-reset-dev", "gpio-reset-line", "mode", "cs-delay", "reset-delay",
                           "align-allowance", "small-packet"};
 
@@ -179,14 +179,14 @@ static void PrintUsage(const char *aProgramName, FILE *aStream, int aExitCode)
 
 int ParseUrl(otRadioUrl *aRadioUrl, char *url)
 {
-    char *deviceInfo    = strstr(url, "://");
-    char *pStart        = url;
-    char *pEnd          = NULL;
-    int   i             = 0;
-    int   j             = 0;
-    int   cUrlProtocols = sizeof(aUrlProtocols) / sizeof(aUrlProtocols[0]);
-    int   cUrlArgs      = sizeof(aUrlArgs) / sizeof(aUrlArgs[0]);
-    char  aArgName[OT_PLATFORM_CONFIG_URL_DEVICE_FILE_LEN];
+    char *deviceInfo       = strstr(url, "://");
+    char *pStart           = url;
+    char *pEnd             = NULL;
+    int   i                = 0;
+    int   j                = 0;
+    int   urlProtocolCount = sizeof(gUrlProtocols) / sizeof(gUrlProtocols[0]);
+    int   urlArgCount      = sizeof(gUrlArgs) / sizeof(gUrlArgs[0]);
+    char  argname[OT_PLATFORM_CONFIG_URL_DEVICE_FILE_LEN];
 
     if (!deviceInfo)
     {
@@ -200,11 +200,11 @@ int ParseUrl(otRadioUrl *aRadioUrl, char *url)
         {
             pEnd = deviceInfo;
         }
-        for (i = 0; i < cUrlProtocols; i++)
+        for (i = 0; i < urlProtocolCount; i++)
         {
-            if (strncmp(pStart, aUrlProtocols[i], (size_t)strlen(aUrlProtocols[i])) == 0)
+            if (strncmp(pStart, gUrlProtocols[i], (size_t)strlen(gUrlProtocols[i])) == 0)
             {
-                aRadioUrl->mProtocols[j] = aUrlProtocols[i];
+                aRadioUrl->mProtocols[j] = gUrlProtocols[i];
                 break;
             }
         }
@@ -233,23 +233,23 @@ int ParseUrl(otRadioUrl *aRadioUrl, char *url)
 
     for (i = 0; i < OT_PLATFORM_CONFIG_URL_MAX_ARGS; i++)
     {
-        memset(aArgName, 0, sizeof(aArgName));
-        if (sscanf(deviceInfo, "%99[^=]=%99[^&]", aArgName, aRadioUrl->mArgValue[i]) == 2)
+        memset(argname, 0, sizeof(argname));
+        if (sscanf(deviceInfo, "%99[^=]=%99[^&]", argname, aRadioUrl->mArgValue[i]) == 2)
         {
-            for (j = 0; j < cUrlArgs; j++)
+            for (j = 0; j < urlArgCount; j++)
             {
-                if (!strcmp(aArgName, aUrlArgs[j]))
+                if (!strcmp(argname, gUrlArgs[j]))
                 {
-                    aRadioUrl->mArgName[i] = aUrlArgs[j];
+                    aRadioUrl->mArgName[i] = gUrlArgs[j];
                     break;
                 }
             }
             if (!aRadioUrl->mArgName[i])
             {
-                fprintf(stderr, "Invalid Argument Name: %s\n\n", aArgName);
+                fprintf(stderr, "Invalid Argument Name: %s\n\n", argname);
                 return -1;
             }
-            deviceInfo += strlen(aArgName) + strlen(aRadioUrl->mArgValue[i]) + 1;
+            deviceInfo += strlen(argname) + strlen(aRadioUrl->mArgValue[i]) + 1;
             if (*deviceInfo == '\0')
             {
                 break;
@@ -333,11 +333,12 @@ static void ParseArg(int aArgCount, char *aArgVector[], PosixConfig *aConfig)
         }
     }
 
-    if (ParseUrl(&(aConfig->mPlatformConfig.mRadioUrl), aArgVector[optind]) < 0)
+    if (optind >= aArgCount)
     {
         PrintUsage(aArgVector[0], stderr, OT_EXIT_INVALID_ARGUMENTS);
     }
-    if (optind >= aArgCount)
+
+    if (ParseUrl(&(aConfig->mPlatformConfig.mRadioUrl), aArgVector[optind]) < 0)
     {
         PrintUsage(aArgVector[0], stderr, OT_EXIT_INVALID_ARGUMENTS);
     }

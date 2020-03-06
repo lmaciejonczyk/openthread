@@ -88,92 +88,92 @@ SpiInterface::SpiInterface(SpinelInterface::Callbacks &aCallback, SpinelInterfac
 
 otError SpiInterface::Init(const otPlatformConfig &aPlatformConfig)
 {
-    int               aIntDeviceIndex   = -1;
-    int               aResetDeviceIndex = -1;
-    uint8_t           aSpiGpioIntLine;
-    uint8_t           aSpiGpioResetLine;
-    uint8_t           aSpiSpeed           = (uint8_t)OT_PLATFORM_CONFIG_SPI_DEFAULT_SPEED_HZ;
-    uint32_t          aSpiCsDelay         = OT_PLATFORM_CONFIG_SPI_DEFAULT_CS_DELAY_US;
-    uint32_t          aSpiResetDelay      = OT_PLATFORM_CONFIG_SPI_DEFAULT_RESET_DELAY_MS;
-    uint16_t          aSpiAlignAllowance  = OT_PLATFORM_CONFIG_SPI_DEFAULT_ALIGN_ALLOWANCE;
-    uint8_t           aSpiSmallPacketSize = OT_PLATFORM_CONFIG_SPI_DEFAULT_SMALL_PACKET_SIZE;
-    uint8_t           aSpiMode            = OT_PLATFORM_CONFIG_SPI_DEFAULT_MODE;
-    const otRadioUrl *aRadioUrl           = &(aPlatformConfig.mRadioUrl);
+    int               intDeviceIndex   = -1;
+    int               resetDeviceIndex = -1;
+    uint8_t           spiGpioIntLine;
+    uint8_t           spiGpioResetLine;
+    uint8_t           spiSpeed           = (uint8_t)OT_PLATFORM_CONFIG_SPI_DEFAULT_SPEED_HZ;
+    uint32_t          spiCsDelay         = OT_PLATFORM_CONFIG_SPI_DEFAULT_CS_DELAY_US;
+    uint32_t          spiResetDelay      = OT_PLATFORM_CONFIG_SPI_DEFAULT_RESET_DELAY_MS;
+    uint16_t          spiAlignAllowance  = OT_PLATFORM_CONFIG_SPI_DEFAULT_ALIGN_ALLOWANCE;
+    uint8_t           spiSmallPacketSize = OT_PLATFORM_CONFIG_SPI_DEFAULT_SMALL_PACKET_SIZE;
+    uint8_t           spiMode            = OT_PLATFORM_CONFIG_SPI_DEFAULT_MODE;
+    const otRadioUrl *radioUrl           = &(aPlatformConfig.mRadioUrl);
 
     for (int i = 0; i < OT_PLATFORM_CONFIG_URL_MAX_ARGS; i++)
     {
-        if (strlen(aRadioUrl->mArgValue[i]) > 0)
+        if (strlen(radioUrl->mArgValue[i]) > 0)
         {
-            if (!strcmp(aRadioUrl->mArgName[i], "gpio-int-dev"))
+            if (!strcmp(radioUrl->mArgName[i], "gpio-int-dev"))
             {
-                aIntDeviceIndex = i;
+                intDeviceIndex = i;
             }
-            else if (!strcmp(aRadioUrl->mArgName[i], "gpio-int-line"))
+            else if (!strcmp(radioUrl->mArgName[i], "gpio-int-line"))
             {
-                sscanf(aRadioUrl->mArgValue[i], "%c", &aSpiGpioIntLine);
+                sscanf(radioUrl->mArgValue[i], "%c", &spiGpioIntLine);
             }
-            else if (!strcmp(aRadioUrl->mArgName[i], "gpio-reset-dev"))
+            else if (!strcmp(radioUrl->mArgName[i], "gpio-reset-dev"))
             {
-                aResetDeviceIndex = i;
+                resetDeviceIndex = i;
             }
-            else if (!strcmp(aRadioUrl->mArgName[i], "gpio-reset-line"))
+            else if (!strcmp(radioUrl->mArgName[i], "gpio-reset-line"))
             {
-                sscanf(aRadioUrl->mArgValue[i], "%c", &aSpiGpioResetLine);
+                sscanf(radioUrl->mArgValue[i], "%c", &spiGpioResetLine);
             }
-            else if (!strcmp(aRadioUrl->mArgName[i], "speed"))
+            else if (!strcmp(radioUrl->mArgName[i], "speed"))
             {
-                sscanf(aRadioUrl->mArgValue[i], "%c", &aSpiSpeed);
+                sscanf(radioUrl->mArgValue[i], "%c", &spiSpeed);
             }
-            else if (!strcmp(aRadioUrl->mArgName[i], "cs-delay"))
+            else if (!strcmp(radioUrl->mArgName[i], "cs-delay"))
             {
-                sscanf(aRadioUrl->mArgValue[i], "%d", &aSpiCsDelay);
+                sscanf(radioUrl->mArgValue[i], "%d", &spiCsDelay);
             }
-            else if (!strcmp(aRadioUrl->mArgName[i], "reset-delay"))
+            else if (!strcmp(radioUrl->mArgName[i], "reset-delay"))
             {
-                sscanf(aRadioUrl->mArgValue[i], "%d", &aSpiResetDelay);
+                sscanf(radioUrl->mArgValue[i], "%d", &spiResetDelay);
             }
-            else if (!strcmp(aRadioUrl->mArgName[i], "align-allowance"))
+            else if (!strcmp(radioUrl->mArgName[i], "align-allowance"))
             {
-                sscanf(aRadioUrl->mArgValue[i], "%hd", &aSpiAlignAllowance);
+                sscanf(radioUrl->mArgValue[i], "%hd", &spiAlignAllowance);
             }
-            else if (!strcmp(aRadioUrl->mArgName[i], "small-packet"))
+            else if (!strcmp(radioUrl->mArgName[i], "small-packet"))
             {
-                sscanf(aRadioUrl->mArgValue[i], "%c", &aSpiSmallPacketSize);
+                sscanf(radioUrl->mArgValue[i], "%c", &spiSmallPacketSize);
             }
-            else if (!strcmp(aRadioUrl->mArgName[i], "mode"))
+            else if (!strcmp(radioUrl->mArgName[i], "mode"))
             {
-                sscanf(aRadioUrl->mArgValue[i], "%c", &aSpiMode);
+                sscanf(radioUrl->mArgValue[i], "%c", &spiMode);
             }
             else
             {
-                fprintf(stderr, "Invalid argument name: %s\n", aRadioUrl->mArgName[i]);
+                fprintf(stderr, "Invalid argument name: %s\n", radioUrl->mArgName[i]);
                 DieNow(OT_EXIT_INVALID_ARGUMENTS);
             }
         }
     }
 
-    if (aIntDeviceIndex < 0)
+    if (intDeviceIndex < 0)
     {
         fprintf(stderr, "Must specify gpio-int-dev\n");
         DieNow(OT_EXIT_INVALID_ARGUMENTS);
     }
 
-    if (aResetDeviceIndex < 0)
+    if (resetDeviceIndex < 0)
     {
         fprintf(stderr, "Must specify gpio-reset-dev\n");
         DieNow(OT_EXIT_INVALID_ARGUMENTS);
     }
 
-    VerifyOrDie(aSpiAlignAllowance <= kSpiAlignAllowanceMax, OT_EXIT_FAILURE);
+    VerifyOrDie(spiAlignAllowance <= kSpiAlignAllowanceMax, OT_EXIT_FAILURE);
 
-    mSpiCsDelayUs       = aSpiCsDelay;
-    mSpiSmallPacketSize = aSpiSmallPacketSize;
-    mSpiAlignAllowance  = aSpiAlignAllowance;
+    mSpiCsDelayUs       = spiCsDelay;
+    mSpiSmallPacketSize = spiSmallPacketSize;
+    mSpiAlignAllowance  = spiAlignAllowance;
 
-    if (strlen(aRadioUrl->mArgValue[aIntDeviceIndex]) > 0)
+    if (strlen(radioUrl->mArgValue[intDeviceIndex]) > 0)
     {
         // If the interrupt pin is not set, SPI interface will use polling mode.
-        InitIntPin(aRadioUrl->mArgValue[aIntDeviceIndex], aSpiGpioIntLine);
+        InitIntPin(radioUrl->mArgValue[intDeviceIndex], spiGpioIntLine);
         otLogNotePlat("SPI interface enters polling mode.");
     }
     else
@@ -181,22 +181,22 @@ otError SpiInterface::Init(const otPlatformConfig &aPlatformConfig)
         fprintf(stderr, "Invalid gpio-int-dev\n");
     }
 
-    if (strlen(aRadioUrl->mArgValue[aResetDeviceIndex]) > 0)
+    if (strlen(radioUrl->mArgValue[resetDeviceIndex]) > 0)
     {
-        InitResetPin(aRadioUrl->mArgValue[aResetDeviceIndex], aSpiGpioResetLine);
+        InitResetPin(radioUrl->mArgValue[resetDeviceIndex], spiGpioResetLine);
     }
     else
     {
         fprintf(stderr, "Invalid gpio-reset-dev\n");
     }
 
-    InitSpiDev(aRadioUrl->mDevice, aSpiMode, aSpiSpeed);
+    InitSpiDev(radioUrl->mDevice, spiMode, spiSpeed);
 
     // Reset RCP chip.
     TrigerReset();
 
     // Waiting for the RCP chip starts up.
-    usleep(static_cast<useconds_t>(aSpiResetDelay) * kUsecPerMsec);
+    usleep(static_cast<useconds_t>(spiResetDelay) * kUsecPerMsec);
 
     return OT_ERROR_NONE;
 }

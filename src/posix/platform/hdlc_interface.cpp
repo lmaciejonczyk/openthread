@@ -135,8 +135,8 @@ otError HdlcInterface::Init(const otPlatformConfig &aPlatformConfig)
 {
     otError           error = OT_ERROR_NONE;
     struct stat       st;
-    const otRadioUrl *aRadioUrl = &(aPlatformConfig.mRadioUrl);
-    int               i         = 0;
+    const otRadioUrl *radioUrl = &(aPlatformConfig.mRadioUrl);
+    int               i        = 0;
 
     VerifyOrExit(mSockFd == -1, error = OT_ERROR_ALREADY);
 
@@ -144,25 +144,25 @@ otError HdlcInterface::Init(const otPlatformConfig &aPlatformConfig)
 
     for (i = OT_PLATFORM_CONFIG_URL_MAX_PROTOCOLS - 1; i >= 0; i--)
     {
-        if (aRadioUrl->mProtocols[i])
+        if (radioUrl->mProtocols[i])
         {
             break;
         }
     }
 
-    if (strcmp(aRadioUrl->mProtocols[i], "uart") == 0)
+    if (strcmp(radioUrl->mProtocols[i], "uart") == 0)
     {
-        mSockFd = OpenFile(aRadioUrl);
+        mSockFd = OpenFile(radioUrl);
         VerifyOrExit(mSockFd != -1, error = OT_ERROR_INVALID_ARGS);
     }
-    else if (strcmp(aRadioUrl->mProtocols[i], "forkpty") == 0)
+    else if (strcmp(radioUrl->mProtocols[i], "forkpty") == 0)
     {
-        mSockFd = ForkPty(aRadioUrl);
+        mSockFd = ForkPty(radioUrl);
         VerifyOrExit(mSockFd != -1, error = OT_ERROR_INVALID_ARGS);
     }
     else
     {
-        fprintf(stderr, "Invalid bottom layer protocol: %s\n", aRadioUrl->mProtocols[i]);
+        fprintf(stderr, "Invalid bottom layer protocol: %s\n", radioUrl->mProtocols[i]);
         ExitNow(error = OT_ERROR_INVALID_ARGS);
     }
 
