@@ -108,17 +108,31 @@ python --version || die
 }
 
 build_cc1352() {
+    export CPPFLAGS="-DOPENTHREAD_CONFIG_COMMISSIONER_ENABLE=1         \
+        -DOPENTHREAD_CONFIG_JOINER_ENABLE=1               \
+        -DOPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1         \
+        -DOPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1         \
+        -DOPENTHREAD_CONFIG_DIAG_ENABLE=1                 \
+        -DOPENTHREAD_CONFIG_DNS_CLIENT_ENABLE=1"
     git checkout -- . || die
     git clean -xfd || die
-    ./bootstrap || die
-    COMMISSIONER=1 JOINER=1 SLAAC=1 DHCP6_CLIENT=1 DHCP6_SERVER=1 DNS_CLIENT=1 make -f examples/Makefile-cc1352 || die
-    arm-none-eabi-size  output/cc1352/bin/ot-cli-ftd || die
-    arm-none-eabi-size  output/cc1352/bin/ot-cli-mtd || die
-    arm-none-eabi-size  output/cc1352/bin/ot-ncp-ftd || die
-    arm-none-eabi-size  output/cc1352/bin/ot-ncp-mtd || die
+    mkdir build && cd build || die
+    cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake -DOT_PLATFORM=cc1352 -DOT_COMPILE_WARNING_AS_ERROR=ON ${CPPFLAGS}.. || die
+    ninja || die
+    cd .. || die
+    arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
+    arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
+    arm-none-eabi-size  examples/apps/cli/ot-ncp-ftd || die
+    arm-none-eabi-size  examples/apps/cli/ot-ncp-mtd || die
 }
 
 build_cc2538() {
+    export CPPFLAGS="-DOPENTHREAD_CONFIG_COMMISSIONER_ENABLE=1         \
+        -DOPENTHREAD_CONFIG_JOINER_ENABLE=1               \
+        -DOPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1         \
+        -DOPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1         \
+        -DOPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1                    \
+        -DOPENTHREAD_CONFIG_DNS_CLIENT_ENABLE=1"
     git checkout -- . || die
     git clean -xfd || die
     mkdir build && cd build || die
@@ -128,12 +142,14 @@ build_cc2538() {
 
     git checkout -- . || die
     git clean -xfd || die
-    ./bootstrap || die
-    COMMISSIONER=1 JOINER=1 SLAAC=1 DHCP6_CLIENT=1 DHCP6_SERVER=1 DNS_CLIENT=1 make -f examples/Makefile-cc2538 || die
-    arm-none-eabi-size  output/cc2538/bin/ot-cli-ftd || die
-    arm-none-eabi-size  output/cc2538/bin/ot-cli-mtd || die
-    arm-none-eabi-size  output/cc2538/bin/ot-ncp-ftd || die
-    arm-none-eabi-size  output/cc2538/bin/ot-ncp-mtd || die
+    mkdir build && cd build || die
+    cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake -DOT_PLATFORM=cc2538 -DOT_COMPILE_WARNING_AS_ERROR=ON ${CPPFLAGS}.. || die
+    ninja || die
+    cd .. || die
+    arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
+    arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
+    arm-none-eabi-size  examples/apps/cli/ot-ncp-ftd || die
+    arm-none-eabi-size  examples/apps/cli/ot-ncp-mtd || die
 }
 
 build_cc2650() {
