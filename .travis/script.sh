@@ -139,10 +139,10 @@ build_cc2538() {
     cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake -DOT_PLATFORM=cc2538 -DOT_COMPILE_WARNING_AS_ERROR=ON ${CPPFLAGS} .. || die
     ninja || die
     cd .. || die
-    arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
-    arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
-    arm-none-eabi-size  examples/apps/ncp/ot-ncp-ftd || die
-    arm-none-eabi-size  examples/apps/ncp/ot-ncp-mtd || die
+    #arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
+    #arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
+    #arm-none-eabi-size  examples/apps/ncp/ot-ncp-ftd || die
+    #arm-none-eabi-size  examples/apps/ncp/ot-ncp-mtd || die
 }
 
 build_cc2650() {
