@@ -117,10 +117,10 @@ build_cc1352() {
     # arm-none-eabi-size  output/cc1352/bin/ot-ncp-ftd || die
     # arm-none-eabi-size  output/cc1352/bin/ot-ncp-mtd || die
     export CC1352FLAGS="-DOPENTHREAD_CONFIG_COMMISSIONER_ENABLE=1         \
-        -DOPENTHREAD_CONFIG_JOINER_ENABLE=1               \
-        -DOPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1         \
-        -DOPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1         \
-        -DOPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1                    \
+        -DOPENTHREAD_CONFIG_JOINER_ENABLE=1                               \
+        -DOPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1                         \
+        -DOPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1                         \
+        -DOPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1                            \
         -DOPENTHREAD_CONFIG_DNS_CLIENT_ENABLE=1"
     git checkout -- . || die
     git clean -xfd || die
@@ -136,10 +136,10 @@ build_cc1352() {
 
 build_cc2538() {
     export CC2538FLAGS="-DOPENTHREAD_CONFIG_COMMISSIONER_ENABLE=1         \
-        -DOPENTHREAD_CONFIG_JOINER_ENABLE=1               \
-        -DOPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1         \
-        -DOPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1         \
-        -DOPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1                    \
+        -DOPENTHREAD_CONFIG_JOINER_ENABLE=1                               \
+        -DOPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1                         \
+        -DOPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1                         \
+        -DOPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1                            \
         -DOPENTHREAD_CONFIG_DNS_CLIENT_ENABLE=1"
     git checkout -- . || die
     git clean -xfd || die

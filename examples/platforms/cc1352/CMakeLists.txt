@@ -78,6 +78,9 @@ target_compile_options(openthread-cc1352 PRIVATE
 target_include_directories(openthread-cc1352 PRIVATE
     ${OT_PUBLIC_INCLUDES}
     ${OT_PRIVATE_INCLUDES}
-    ${PROJECT_SOURCE_DIR}/examples/platforms
+    ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/core
+    ${PROJECT_SOURCE_DIR}/examples/platforms
+    ${PROJECT_SOURCE_DIR}/third_party/ti/devices/cc13x2_cc26x2
+    ${PROJECT_SOURCE_DIR}/third_party/mbedtls/repo/include
 )
