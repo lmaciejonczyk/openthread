@@ -134,6 +134,7 @@ build_cc2538() {
 
     git checkout -- . || die
     git clean -xfd || die
+    ./bootstrap || die
     mkdir build && cd build || die
     cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake -DOT_PLATFORM=cc2538 -DOT_COMPILE_WARNING_AS_ERROR=ON ${CPPFLAGS} .. || die
     ninja || die
