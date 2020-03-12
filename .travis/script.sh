@@ -116,24 +116,24 @@ build_cc1352() {
     # arm-none-eabi-size  output/cc1352/bin/ot-cli-mtd || die
     # arm-none-eabi-size  output/cc1352/bin/ot-ncp-ftd || die
     # arm-none-eabi-size  output/cc1352/bin/ot-ncp-mtd || die
-    CMAKE_FLAGS="                        \
-        -DOT_COMPILE_WARNING_AS_ERROR=on \
-        -DOT_COMMISSIONER=on             \
-        -DOT_DHCP6_CLIENT=on             \
-        -DOT_DHCP6_SERVER=on             \
-        -DOT_DNS_CLIENT=on               \
-        -DOT_JOINER=on                   \
-        -DOT_SLAAC=on"
-    git checkout -- . || die
-    git clean -xfd || die
-    mkdir build && cd build || die
-    cmake -GNinja -DOT_PLATFORM=cc1352 -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake ${CMAKE_FLAGS} .. || die
-    ninja || die
-    cd .. || die
-    arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
-    arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
-    arm-none-eabi-size  examples/apps/ncp/ot-ncp-ftd || die
-    arm-none-eabi-size  examples/apps/ncp/ot-ncp-mtd || die
+    #CMAKE_FLAGS="                        \
+    #    -DOT_COMPILE_WARNING_AS_ERROR=on \
+    #    -DOT_COMMISSIONER=on             \
+    #    -DOT_DHCP6_CLIENT=on             \
+    #    -DOT_DHCP6_SERVER=on             \
+    #    -DOT_DNS_CLIENT=on               \
+    #    -DOT_JOINER=on                   \
+    #    -DOT_SLAAC=on"
+    #git checkout -- . || die
+    #git clean -xfd || die
+    #mkdir build && cd build || die
+    #cmake -GNinja -DOT_PLATFORM=cc1352 -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake ${CMAKE_FLAGS} .. || die
+    #ninja || die
+    #cd .. || die
+    #arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
+    #arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
+    #arm-none-eabi-size  examples/apps/ncp/ot-ncp-ftd || die
+    #arm-none-eabi-size  examples/apps/ncp/ot-ncp-mtd || die
 }
 
 build_cc2538() {
