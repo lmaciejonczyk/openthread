@@ -81,6 +81,8 @@ target_include_directories(openthread-cc1352 PRIVATE
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/core
     ${PROJECT_SOURCE_DIR}/examples/platforms
+    ${PROJECT_SOURCE_DIR}/examples/platforms/cc1352/crypto
     ${PROJECT_SOURCE_DIR}/third_party/ti/devices/cc13x2_cc26x2
     ${PROJECT_SOURCE_DIR}/third_party/mbedtls/repo/include
+    ${PROJECT_SOURCE_DIR}/third_party/mbedtls
 )
