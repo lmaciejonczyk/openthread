@@ -116,16 +116,18 @@ build_cc1352() {
     # arm-none-eabi-size  output/cc1352/bin/ot-cli-mtd || die
     # arm-none-eabi-size  output/cc1352/bin/ot-ncp-ftd || die
     # arm-none-eabi-size  output/cc1352/bin/ot-ncp-mtd || die
-    export CC1352FLAGS="-DOPENTHREAD_CONFIG_COMMISSIONER_ENABLE=1         \
-        -DOPENTHREAD_CONFIG_JOINER_ENABLE=1                               \
-        -DOPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1                         \
-        -DOPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1                         \
-        -DOPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1                            \
-        -DOPENTHREAD_CONFIG_DNS_CLIENT_ENABLE=1"
+    CMAKE_FLAGS="                        \
+        -DOT_COMPILE_WARNING_AS_ERROR=on \
+        -DOT_COMMISSIONER=on             \
+        -DOT_DHCP6_CLIENT=on             \
+        -DOT_DHCP6_SERVER=on             \
+        -DOT_DNS_CLIENT=on               \
+        -DOT_JOINER=on                   \
+        -DOT_SLAAC=on"
     git checkout -- . || die
     git clean -xfd || die
     mkdir build && cd build || die
-    cmake -GNinja -DOT_PLATFORM=cc1352 -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake -DOT_COMPILE_WARNING_AS_ERROR=ON ${CC1352FLAGS} .. || die
+    cmake -GNinja -DOT_PLATFORM=cc1352 -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake ${CMAKE_FLAGS} .. || die
     ninja || die
     cd .. || die
     arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
@@ -135,12 +137,14 @@ build_cc1352() {
 }
 
 build_cc2538() {
-    export CC2538FLAGS="-DOPENTHREAD_CONFIG_COMMISSIONER_ENABLE=1         \
-        -DOPENTHREAD_CONFIG_JOINER_ENABLE=1                               \
-        -DOPENTHREAD_CONFIG_DHCP6_CLIENT_ENABLE=1                         \
-        -DOPENTHREAD_CONFIG_DHCP6_SERVER_ENABLE=1                         \
-        -DOPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1                            \
-        -DOPENTHREAD_CONFIG_DNS_CLIENT_ENABLE=1"
+    CMAKE_FLAGS="                        \
+        -DOT_COMPILE_WARNING_AS_ERROR=on \
+        -DOT_COMMISSIONER=on             \
+        -DOT_DHCP6_CLIENT=on             \
+        -DOT_DHCP6_SERVER=on             \
+        -DOT_DNS_CLIENT=on               \
+        -DOT_JOINER=on                   \
+        -DOT_SLAAC=on"
     git checkout -- . || die
     git clean -xfd || die
     mkdir build && cd build || die
@@ -151,7 +155,7 @@ build_cc2538() {
     git checkout -- . || die
     git clean -xfd || die
     mkdir build && cd build || die
-    cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake -DOT_PLATFORM=cc2538 -DOT_COMPILE_WARNING_AS_ERROR=ON ${CC2538FLAGS} .. || die
+    cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2538/arm-none-eabi.cmake -DOT_PLATFORM=cc2538 ${CMAKE_FLAGS} .. || die
     ninja || die
     cd .. || die
     #arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
