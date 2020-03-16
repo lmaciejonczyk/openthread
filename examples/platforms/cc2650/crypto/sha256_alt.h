@@ -47,6 +47,12 @@ extern "C" {
  * @brief translating the mbedtls SHA256 workspace to the cc2650 SHA256 workspace.
  */
 typedef SHA256_memory_t mbedtls_sha256_context;
+// void             mbedtls_sha256_init(mbedtls_sha256_context *ctx);
+// void             mbedtls_sha256_free(mbedtls_sha256_context *ctx);
+// int              mbedtls_sha256_starts_ret(mbedtls_sha256_context *ctx, int is224);
+// int              mbedtls_sha256_update_ret(mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen);
+// int              mbedtls_sha256_finish_ret(mbedtls_sha256_context *ctx, unsigned char output[32]);
+// int              mbedtls_internal_sha256_process(mbedtls_sha256_context *ctx, const unsigned char data[64]);
 
 #ifdef __cplusplus
 }
