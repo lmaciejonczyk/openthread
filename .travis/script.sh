@@ -159,7 +159,7 @@ build_cc2650() {
     ninja ot-cli-mtd ot-ncp-mtd || die
 
     arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
-    arm-none-eabi-size  examples/apps/cli/ot-ncp-mtd || die
+    arm-none-eabi-size  examples/apps/ncp/ot-ncp-mtd || die
     cd .. || die
 }
 
