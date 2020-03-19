@@ -37,8 +37,21 @@ list(APPEND OT_PLATFORM_DEFINES
     "OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE=\"openthread-core-cc2650-config-check.h\""
     "OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1"
     "OPENTHREAD_SETTINGS_RAM=0"
+    "MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\""
 )
 set(OT_PLATFORM_DEFINES ${OT_PLATFORM_DEFINES} PARENT_SCOPE)
+set(CC2650_CFLAGS
+    $<$<COMPILE_LANGUAGE:C>: -Wall -Wextra -Wshadow -Werror>
+    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wshadow -Wno-c++14-compat -fno-exceptions>
+)
+
+list(APPEND OT_PRIVATE_DEFINES "MBEDTLS_USER_CONFIG_FILE=\"cc2650-mbedtls-config.h\"")
+set(OT_PRIVATE_DEFINES ${OT_PRIVATE_DEFINES} PARENT_SCOPE)
+list(APPEND OT_PUBLIC_INCLUDES
+    "${PROJECT_SOURCE_DIR}/examples/platforms/cc2650/crypto"
+    "${PROJECT_SOURCE_DIR}/third_party/ti/devices/cc26x0"
+)
+set(OT_PUBLIC_INCLUDES ${OT_PUBLIC_INCLUDES} PARENT_SCOPE)
 
 list(APPEND OT_PLATFORM_DEFINES "OPENTHREAD_PROJECT_CORE_CONFIG_FILE=\"${OT_CONFIG}\"")
 
@@ -72,12 +85,10 @@ target_compile_definitions(openthread-cc2650
         ${OT_PLATFORM_DEFINES}
     PRIVATE
         ${OT_PRIVATE_DEFINES}
-        "MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\""
-        "MBEDTLS_USER_CONFIG_FILE=\"cc2650-mbedtls-config.h\""
 )
 
 target_compile_options(openthread-cc2650 PRIVATE
-    ${OT_CFLAGS}
+    ${CC2650_CFLAGS}
 )
 
 target_include_directories(openthread-cc2650 PRIVATE
@@ -86,8 +97,9 @@ target_include_directories(openthread-cc2650 PRIVATE
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/core
     ${PROJECT_SOURCE_DIR}/examples/platforms
-    ${PROJECT_SOURCE_DIR}/examples/platforms/cc2650/crypto
-    ${PROJECT_SOURCE_DIR}/third_party/ti/devices/cc26x0
     ${PROJECT_SOURCE_DIR}/third_party/mbedtls/repo/include
     ${PROJECT_SOURCE_DIR}/third_party/mbedtls
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/examples/platforms/cc2650/crypto
+        ${PROJECT_SOURCE_DIR}/third_party/ti/devices/cc26x0
 )

@@ -119,7 +119,7 @@ build_cc1352() {
     git checkout -- . || die
     git clean -xfd || die
     mkdir build && cd build || die
-    cmake -GNinja -DOT_PLATFORM=cc1352 -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc1352/arm-none-eabi.cmake ${CMAKE_FLAGS} .. || die
+    cmake -GNinja -DOT_PLATFORM=cc1352 -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc1352/arm-none-eabi.cmake ${CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=Debug .. || die
     ninja || die
     arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
     arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
@@ -154,10 +154,13 @@ build_cc2538() {
 build_cc2650() {
     git checkout -- . || die
     git clean -xfd || die
-    ./bootstrap || die
-    make -f examples/Makefile-cc2650 || die
-    arm-none-eabi-size  output/cc2650/bin/ot-cli-mtd || die
-    arm-none-eabi-size  output/cc2650/bin/ot-ncp-mtd || die
+    mkdir build && cd build || die
+    cmake -GNinja -DOT_PLATFORM=cc2650 -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2650/arm-none-eabi.cmake -DOT_COMPILE_WARNING_AS_ERROR=on -DCMAKE_BUILD_TYPE=Debug ..
+    ninja ot-cli-mtd ot-ncp-mtd || die
+
+    arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
+    arm-none-eabi-size  examples/apps/cli/ot-ncp-mtd || die
+    cd .. || die
 }
 
 build_cc2652() {
@@ -173,7 +176,7 @@ build_cc2652() {
     git checkout -- . || die
     git clean -xfd || die
     mkdir build && cd build || die
-    cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2652/arm-none-eabi.cmake -DOT_PLATFORM=cc2652 ${CMAKE_FLAGS} .. || die
+    cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/cc2652/arm-none-eabi.cmake -DOT_PLATFORM=cc2652 ${CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=Debug .. || die
     ninja || die
 
     arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
