@@ -29,3 +29,8 @@
 if(OT_BUILTIN_MBEDTLS)
     add_subdirectory(mbedtls)
 endif()
+if(OT_PLATFORM MATCHES "nrf")
+    set(OT_PLATFORM_EXAMPLE ${OT_PLATFORM})
+    add_subdirectory(jlink)
+    add_subdirectory(NordicSemiconductor)
+endif()

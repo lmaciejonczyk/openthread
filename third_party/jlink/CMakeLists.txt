@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2019, The OpenThread Authors.
+#  Copyright (c) 2020, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -26,29 +26,38 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-set(CMAKE_SYSTEM_NAME              Generic)
-set(CMAKE_SYSTEM_PROCESSOR         ARM)
+string(REPLACE "-Wundef" "" OT_CFLAGS "${OT_CFLAGS}")
+add_library(jlinkrtt
+    SEGGER_RTT_V640/RTT/SEGGER_RTT.c
+)
 
-set(CMAKE_C_COMPILER               arm-none-eabi-gcc)
-set(CMAKE_CXX_COMPILER             arm-none-eabi-g++)
-set(CMAKE_ASM_COMPILER             arm-none-eabi-as)
-set(CMAKE_RANLIB                   arm-none-eabi-ranlib)
-
-set(COMMON_C_FLAGS                 "-mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mthumb -mabi=aapcs -fdata-sections -ffunction-sections")
-if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7)
-    set(CMAKE_C_FLAGS                  "${COMMON_C_FLAGS} -Wno-expansion-to-defined")
+if(OT_PLATFORM STREQUAL "nrf52811")
+    target_compile_options(jlinkrtt PRIVATE
+        -DNRF52811_XXAA
+        -DSEGGER_RTT_CONFIG_H=\"${PROJECT_SOURCE_DIR}/third_party/NordicSemiconductor/segger_rtt/SEGGER_RTT_Conf.h\"
+        -DUSE_APP_CONFIG=1
+    )
+elseif(OT_PLATFORM STREQUAL "nrf52833")
+    target_compile_options(jlinkrtt PRIVATE
+        -DNRF52833_XXAA
+        -DSEGGER_RTT_CONFIG_H=\"${PROJECT_SOURCE_DIR}/third_party/NordicSemiconductor/segger_rtt/SEGGER_RTT_Conf.h\"
+        -DUSE_APP_CONFIG=1
+    )
+else()
+    target_compile_options(jlinkrtt PRIVATE
+        -DNRF52840_XXAA
+        -DSEGGER_RTT_CONFIG_H=\"${PROJECT_SOURCE_DIR}/third_party/NordicSemiconductor/segger_rtt/SEGGER_RTT_Conf.h\"
+        -DUSE_APP_CONFIG=1
+    )
 endif()
-set(CMAKE_C_FLAGS                  "${COMMON_C_FLAGS} -std=gnu99")
-set(CMAKE_CXX_FLAGS                "${COMMON_C_FLAGS} -fno-exceptions -fno-rtti")
-set(CMAKE_ASM_FLAGS                "${COMMON_C_FLAGS} -x assembler-with-cpp")
-set(CMAKE_EXE_LINKER_FLAGS         "${COMMON_C_FLAGS} -specs=nano.specs -specs=nosys.specs -Wl,--gc-sections")
 
-set(CMAKE_C_FLAGS_DEBUG            "-Og")
-set(CMAKE_CXX_FLAGS_DEBUG          "-Og")
-set(CMAKE_ASM_FLAGS_DEBUG          "-Og")
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG   "-Og")
 
-set(CMAKE_C_FLAGS_RELEASE          "-Os")
-set(CMAKE_CXX_FLAGS_RELEASE        "-Os")
-set(CMAKE_ASM_FLAGS_RELEASE        "-Os")
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Os")
+target_include_directories(jlinkrtt PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/third_party/NordicSemiconductor/cmsis
+    ${PROJECT_SOURCE_DIR}/third_party/NordicSemiconductor/config
+    ${PROJECT_SOURCE_DIR}/third_party/NordicSemiconductor/config/${OT_PLATFORM}/config
+    ${PROJECT_SOURCE_DIR}/third_party/NordicSemiconductor/dependencies
+    ${PROJECT_SOURCE_DIR}/third_party/NordicSemiconductor/libraries/app_error
+    ${PROJECT_SOURCE_DIR}/third_party/NordicSemiconductor/nrfx/mdk
+)

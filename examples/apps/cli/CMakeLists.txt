@@ -40,25 +40,39 @@ set(COMMON_INCLUDES
     ${PROJECT_SOURCE_DIR}/examples/platforms
     ${PROJECT_SOURCE_DIR}/src/core
 )
-
 target_include_directories(ot-cli-ftd PRIVATE ${COMMON_INCLUDES})
 target_include_directories(ot-cli-mtd PRIVATE ${COMMON_INCLUDES})
+if(OT_BUILTIN_MBEDTLS)
+    target_link_libraries(ot-cli-ftd
+        openthread-cli-ftd
+        ${OT_PLATFORM_LIB}
+        openthread-ftd
+        ${OT_PLATFORM_LIB}
+        mbedcrypto
+    )
 
-target_link_libraries(ot-cli-ftd
-    openthread-cli-ftd
-    ${OT_PLATFORM_LIB}
-    openthread-ftd
-    ${OT_PLATFORM_LIB}
-    mbedcrypto
-)
+    target_link_libraries(ot-cli-mtd
+        openthread-cli-mtd
+        ${OT_PLATFORM_LIB}
+        openthread-mtd
+        ${OT_PLATFORM_LIB}
+        mbedcrypto
+    )
+else()
+    target_link_libraries(ot-cli-ftd
+        openthread-cli-ftd
+        ${OT_PLATFORM_LIB}
+        openthread-ftd
+        ${OT_PLATFORM_LIB}
+    )
 
-target_link_libraries(ot-cli-mtd
-    openthread-cli-mtd
-    ${OT_PLATFORM_LIB}
-    openthread-mtd
-    ${OT_PLATFORM_LIB}
-    mbedcrypto
-)
+    target_link_libraries(ot-cli-mtd
+        openthread-cli-mtd
+        ${OT_PLATFORM_LIB}
+        openthread-mtd
+        ${OT_PLATFORM_LIB}
+    )
+endif()
 
 install(TARGETS ot-cli-ftd ot-cli-mtd
     DESTINATION bin)
