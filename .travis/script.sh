@@ -344,28 +344,50 @@ build_nrf52840() {
 }
 
 build_qpg6095() {
+    CMAKE_FLAGS="                        \
+        -DOT_COMPILE_WARNING_AS_ERROR=on \
+        -DOT_COMMISSIONER=on             \
+        -DOT_DHCP6_CLIENT=on             \
+        -DOT_DHCP6_SERVER=on             \
+        -DOT_DNS_CLIENT=on               \
+        -DOT_JOINER=on                   \
+        -DOT_SLAAC=on"
     git checkout -- . || die
     git clean -xfd || die
-    ./bootstrap || die
-    COMMISSIONER=1 JOINER=1 SLAAC=1 DHCP6_CLIENT=1 DHCP6_SERVER=1 DNS_CLIENT=1 make -f examples/Makefile-qpg6095 || die
-    arm-none-eabi-size  output/qpg6095/bin/ot-cli-ftd || die
-    arm-none-eabi-size  output/qpg6095/bin/ot-cli-mtd || die
-    arm-none-eabi-size  output/qpg6095/bin/ot-ncp-ftd || die
-    arm-none-eabi-size  output/qpg6095/bin/ot-ncp-mtd || die
+    mkdir build && cd build || die
+    cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/qpg6095/arm-none-eabi.cmake -DOT_PLATFORM=qpg6095 ${CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=Debug .. || die
+    ninja || die
+
+    arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
+    arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
+    arm-none-eabi-size  examples/apps/ncp/ot-ncp-ftd || die
+    arm-none-eabi-size  examples/apps/ncp/ot-ncp-mtd || die
+    cd .. || die
 }
 
 build_samr21() {
+    CMAKE_FLAGS="                        \
+        -DOT_COMPILE_WARNING_AS_ERROR=on \
+        -DOT_COMMISSIONER=on             \
+        -DOT_DHCP6_CLIENT=on             \
+        -DOT_DHCP6_SERVER=on             \
+        -DOT_DNS_CLIENT=on               \
+        -DOT_JOINER=on                   \
+        -DOT_SLAAC=on"
     git checkout -- . || die
     git clean -xfd || die
     wget http://ww1.microchip.com/downloads/en/DeviceDoc/asf-standalone-archive-3.45.0.85.zip || die
     unzip -qq asf-standalone-archive-3.45.0.85.zip || die
     mv xdk-asf-3.45.0 third_party/microchip/asf || die
-    ./bootstrap || die
-    COMMISSIONER=1 JOINER=1 SLAAC=1 DHCP6_CLIENT=1 DHCP6_SERVER=1 DNS_CLIENT=1 make -f examples/Makefile-samr21 || die
-    arm-none-eabi-size  output/samr21/bin/ot-cli-ftd || die
-    arm-none-eabi-size  output/samr21/bin/ot-cli-mtd || die
-    arm-none-eabi-size  output/samr21/bin/ot-ncp-ftd || die
-    arm-none-eabi-size  output/samr21/bin/ot-ncp-mtd || die
+    mkdir build && cd build || die
+    cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=examples/platforms/samr21/arm-none-eabi.cmake -DOT_PLATFORM=samr21 ${CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=Debug .. || die
+    ninja || die
+
+    arm-none-eabi-size  examples/apps/cli/ot-cli-ftd || die
+    arm-none-eabi-size  examples/apps/cli/ot-cli-mtd || die
+    arm-none-eabi-size  examples/apps/ncp/ot-ncp-ftd || die
+    arm-none-eabi-size  examples/apps/ncp/ot-ncp-mtd || die
+    cd .. || die
 }
 
 [ $BUILD_TARGET != arm-gcc-4 ] || {
