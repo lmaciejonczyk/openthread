@@ -36,7 +36,6 @@ endif()
 list(APPEND OT_PLATFORM_DEFINES
     "OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE=\"openthread-core-cc2650-config-check.h\""
     "OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE=1"
-    "OPENTHREAD_SETTINGS_RAM=0"
     "MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\""
 )
 set(OT_PLATFORM_DEFINES ${OT_PLATFORM_DEFINES} PARENT_SCOPE)
@@ -59,7 +58,6 @@ add_library(openthread-cc2650
     alarm.c
     diag.c
     entropy.c
-    flash.c
     logging.c
     misc.c
     radio.c
