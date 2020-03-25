@@ -58,12 +58,11 @@ add_library(openthread-qpg6095
     settings.cpp
     radio.c
     uart.c
-    $<TARGET_OBJECTS:openthread-platform-utils>
 )
 
 set_property(TARGET openthread-qpg6095 PROPERTY C_STANDARD 99)
 
-target_link_libraries(openthread-qpg6095 PRIVATE openthread-platform-utils)
+target_link_libraries(openthread-qpg6095 PRIVATE ${PROJECT_SOURCE_DIR}/examples/platforms/utils/libopenthread_platform_utils_a-settings_ram.o)
 target_link_libraries(openthread-qpg6095 PRIVATE ${PROJECT_SOURCE_DIR}/third_party/Qorvo/qpg6095/libQorvoQPG6095.a)
 target_link_options(openthread-qpg6095 PUBLIC -T${PROJECT_SOURCE_DIR}/examples/platforms/qpg6095/qpg6095.ld)
 target_link_options(openthread-qpg6095 PUBLIC -Wl,-Map=$<TARGET_PROPERTY:NAME>.map)
