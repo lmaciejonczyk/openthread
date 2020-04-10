@@ -30,8 +30,8 @@
 #include "fsl_flash.h"
 #include "openthread-core-jn5189-config.h"
 #include <utils/code_utils.h>
-#include <utils/flash.h>
-#include "openthread/platform/alarm-milli.h"
+#include <openthread/platform/alarm-milli.h>
+#include <openthread/platform/flash.h>
 
 #define USE_MEM_COPY_FOR_READ 0
 
@@ -41,17 +41,19 @@
 #define NORMAL_READ_MODE 0
 #define ONE_PAGE 1
 #define BYTES_ALINGMENT 16
+#define FLASH_SWAP_SIZE (FLASH_PAGE_SIZE * (FLASH_AUTO_PAGE / 2))
 
 uint8_t         pageBuffer[FLASH_PAGE_SIZE] __attribute__((aligned(4))) = {0};
 static uint32_t sNvFlashStartAddr;
 static uint32_t sNvFlashEndAddr;
 
-static bool     mapToNvFlashAddress(uint32_t *aAddress);
+static uint32_t mapToNvFlashAddress(uint8_t aSwapIndex, uint32_t aOffset);
 static void     copyFromFlash(uint8_t *pDst, uint8_t *pSrc, uint32_t cBytes);
 static uint32_t blankCheckAndErase(uint8_t *pageAddr);
 
-otError utilsFlashInit(void)
+void otPlatFlashInit(otInstance *aInstance)
 {
+    OT_UNUSED_VARIABLE(aInstance);
     extern uint32_t __nv_storage_start_address;
     extern uint32_t __nv_storage_end_address;
 
@@ -63,16 +65,17 @@ otError utilsFlashInit(void)
     return OT_ERROR_NONE;
 }
 
-uint32_t utilsFlashGetSize(void)
+uint32_t otPlatFlashGetSwapSize(otInstance *aInstance)
 {
-    return sNvFlashEndAddr - sNvFlashStartAddr;
+    OT_UNUSED_VARIABLE(aInstance);
+    return FLASH_SWAP_SIZE;
 }
 
-otError utilsFlashErasePage(uint32_t aAddress)
+void otPlatFlashErase(otInstance *aInstance, uint8_t aSwapIndex)
 {
-    otError  error = OT_ERROR_INVALID_ARGS;
+    OT_UNUSED_VARIABLE(aInstance);
     status_t status;
-    uint32_t address = aAddress;
+    uint8_t  address = aAddress;
 
     /* Map address to NV Flash space and check boundaries */
     if (mapToNvFlashAddress(&address))
@@ -86,9 +89,6 @@ otError utilsFlashErasePage(uint32_t aAddress)
             otEXPECT_ACTION((status & FLASH_DONE), error = OT_ERROR_FAILED);
         }
     }
-
-exit:
-    return error;
 }
 
 otError utilsFlashStatusWait(uint32_t aTimeout)
@@ -108,16 +108,16 @@ otError utilsFlashStatusWait(uint32_t aTimeout)
     return error;
 }
 
-uint32_t utilsFlashWrite(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
+void otPlatFlashWrite(otInstance *aInstance, uint8_t aSwapIndex, uint32_t aOffset, const void *aData, uint32_t aSize)
 {
     uint32_t result = 0;
     status_t status;
-    uint32_t address = aAddress;
+    uint32_t address = mapToNvFlashAddress(aSwapIndex, aOffset);
     uint32_t alignAddr;
     uint32_t bytes;
 
     /* Map address to NV Flash space and check boundaries */
-    if (mapToNvFlashAddress(&address))
+    if (address)
     {
         /* Check to see if data is written outside NV Flash space */
         if ((address + aSize) <= sNvFlashEndAddr)
@@ -185,40 +185,32 @@ exit:
     return result;
 }
 
-uint32_t utilsFlashRead(uint32_t aAddress, uint8_t *aData, uint32_t aSize)
+void otPlatFlashRead(otInstance *aInstance, uint8_t aSwapIndex, uint32_t aOffset, void *aData, uint32_t aSize)
 {
-    uint32_t address = aAddress;
-    uint32_t result  = 0;
+    OT_UNUSED_VARIABLE(aInstance);
+    /* Map address to NV Flash space */
+    uint32_t address = mapToNvFlashAddress(aSwapIndex, aOffset);
 
-    /* Map address to NV Flash space and check boundaries */
-    if (mapToNvFlashAddress(&address))
+    if (address)
     {
         /* Check to see if data is read outside NV Flash space */
         if ((address + aSize) <= sNvFlashEndAddr)
         {
             copyFromFlash(aData, (uint8_t *)address, aSize);
-            result = aSize;
         }
     }
-
-    return result;
 }
 
-static bool mapToNvFlashAddress(uint32_t *aAddress)
+static uint32_t mapToNvFlashAddress(uint8_t aSwapIndex, uint32_t aOffset)
 {
-    bool     status  = true;
-    uint32_t address = *aAddress + sNvFlashStartAddr;
+    uint32_t address = sNvFlashStartAddr + aOffset;
 
-    if ((address < sNvFlashStartAddr) || (address > sNvFlashEndAddr))
+    if (aSwapIndex)
     {
-        status = false;
-    }
-    else
-    {
-        *aAddress = address;
+        address += FLASH_SWAP_SIZE;
     }
 
-    return status;
+    return address;
 }
 
 uint32_t blankCheckAndErase(uint8_t *pageAddr)
