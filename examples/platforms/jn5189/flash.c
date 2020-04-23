@@ -61,8 +61,6 @@ void otPlatFlashInit(otInstance *aInstance)
 
     sNvFlashStartAddr = (uint32_t)&__nv_storage_start_address;
     sNvFlashEndAddr   = (uint32_t)&__nv_storage_end_address;
-
-    return OT_ERROR_NONE;
 }
 
 uint32_t otPlatFlashGetSwapSize(otInstance *aInstance)
@@ -78,7 +76,7 @@ void otPlatFlashErase(otInstance *aInstance, uint8_t aSwapIndex)
     uint8_t  address = aAddress;
 
     /* Map address to NV Flash space and check boundaries */
-    if (mapToNvFlashAddress(&address))
+    if (mapToNvFlashAddress(aSwapIndex, &address))
     {
         /* If address is aligned to page size */
         if ((address % FLASH_PAGE_SIZE) == 0)
@@ -89,23 +87,6 @@ void otPlatFlashErase(otInstance *aInstance, uint8_t aSwapIndex)
             otEXPECT_ACTION((status & FLASH_DONE), error = OT_ERROR_FAILED);
         }
     }
-}
-
-otError utilsFlashStatusWait(uint32_t aTimeout)
-{
-    otError  error = OT_ERROR_BUSY;
-    uint32_t start = otPlatAlarmMilliGetNow();
-
-    do
-    {
-        if (FLASH->INT_STATUS & FLASH_DONE)
-        {
-            error = OT_ERROR_NONE;
-            break;
-        }
-    } while (aTimeout && ((otPlatAlarmMilliGetNow() - start) < aTimeout));
-
-    return error;
 }
 
 void otPlatFlashWrite(otInstance *aInstance, uint8_t aSwapIndex, uint32_t aOffset, const void *aData, uint32_t aSize)
@@ -180,9 +161,6 @@ void otPlatFlashWrite(otInstance *aInstance, uint8_t aSwapIndex, uint32_t aOffse
             }
         }
     }
-
-exit:
-    return result;
 }
 
 void otPlatFlashRead(otInstance *aInstance, uint8_t aSwapIndex, uint32_t aOffset, void *aData, uint32_t aSize)

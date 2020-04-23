@@ -35,7 +35,6 @@ endif()
 
 list(APPEND OT_PLATFORM_DEFINES
     "OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE=\"openthread-core-jn5189-config-check.h\""
-    "OPENTHREAD_SETTINGS_RAM=0"
     "MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\""
 )
 set(OT_PLATFORM_DEFINES ${OT_PLATFORM_DEFINES} PARENT_SCOPE)
@@ -69,9 +68,9 @@ add_library(openthread-jn5189_plat
     logging.c
     misc.c
     radio.c
+    settings_jn5189.c
     system.c
     uart.c
-    settings_jn5189.c
     ${PROJECT_SOURCE_DIR}/third_party/nxp/JN5189/drivers/fsl_assert.c
     ${PROJECT_SOURCE_DIR}/third_party/nxp/JN5189/crypto/aes_alt.c
     ${PROJECT_SOURCE_DIR}/third_party/nxp/JN5189/crypto/ksdk_mbedtls.c
