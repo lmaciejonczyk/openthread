@@ -30,8 +30,7 @@ add_executable(ot-daemon
     main.c
 )
 
-set_target_properties(
-    ot-daemon
+set_target_properties(ot-daemon
     PROPERTIES
         C_STANDARD 99
         CXX_STANDARD 11
@@ -39,43 +38,41 @@ set_target_properties(
 
 target_include_directories(ot-daemon PRIVATE ${COMMON_INCLUDES})
 
-target_compile_definitions(ot-daemon PRIVATE
-    OPENTHREAD_POSIX_APP_TYPE=OT_POSIX_APP_TYPE_CLI
-    ${OT_PLATFORM_DEFINES}
+target_compile_definitions(ot-daemon
+    PRIVATE
+        OPENTHREAD_POSIX_APP_TYPE=OT_POSIX_APP_TYPE_CLI
+        ${OT_PLATFORM_DEFINES}
 )
 
-target_compile_options(ot-daemon PRIVATE
-    ${OT_CFLAGS}
-)
+target_compile_options(ot-daemon PRIVATE ${OT_CFLAGS})
 
-target_link_libraries(ot-daemon PRIVATE
-    openthread-cli-ftd
-    ${OT_PLATFORM_LIB}
-    openthread-ftd
-    ${OT_PLATFORM_LIB}
-    openthread-ncp-ftd
-    mbedcrypto
+target_link_libraries(ot-daemon
+    PRIVATE
+        openthread-cli-ftd
+        ${OT_PLATFORM_LIB}
+        openthread-ftd
+        ${OT_PLATFORM_LIB}
+        openthread-ncp-ftd
+        mbedcrypto
 )
 
 add_executable(ot-ctl
     client.cpp
 )
 
-set_target_properties(
-    ot-ctl
+set_target_properties(ot-ctl
     PROPERTIES
         C_STANDARD 99
         CXX_STANDARD 11
 )
 
-target_compile_definitions(ot-ctl PRIVATE
-    $<$<BOOL:${READLINE}>:HAVE_LIB$<UPPER_CASE:${OT_READLINE}>=1>
-    ${OT_PLATFORM_DEFINES}
+target_compile_definitions(ot-ctl
+    PRIVATE
+        $<$<BOOL:${READLINE}>:HAVE_LIB$<UPPER_CASE:${OT_READLINE}>=1>
+        ${OT_PLATFORM_DEFINES}
 )
 
-target_compile_options(ot-ctl PRIVATE
-    ${OT_CFLAGS}
-)
+target_compile_options(ot-ctl PRIVATE ${OT_CFLAGS})
 
 target_link_libraries(ot-ctl
     openthread-platform

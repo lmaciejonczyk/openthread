@@ -29,9 +29,9 @@
 set(COMMON_INCLUDES
     ${OT_PUBLIC_INCLUDES}
     ${OT_PRIVATE_INCLUDES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/platform
+    ${CMAKE_CURRENT_SOURCE_DIR}/platform/include
     ${PROJECT_SOURCE_DIR}/src/core
-    ${PROJECT_SOURCE_DIR}/src/posix/platform
-    ${PROJECT_SOURCE_DIR}/src/posix/platform/include
 )
 
 set(OT_READLINE "readline" CACHE STRING "set readline library name")

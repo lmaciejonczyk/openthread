@@ -75,17 +75,17 @@ add_library(openthread-posix
     virtual_time.cpp
 )
 
-set_target_properties(
-    openthread-posix
+set_target_properties(openthread-posix
     PROPERTIES
         C_STANDARD 99
         CXX_STANDARD 11
 )
 
-target_link_libraries(openthread-posix PUBLIC
-    openthread-platform
-    ot-config
-    util
+target_link_libraries(openthread-posix
+    PUBLIC
+        openthread-platform
+        ot-config
+        util
 )
 
 target_compile_definitions(openthread-posix
@@ -95,16 +95,15 @@ target_compile_definitions(openthread-posix
         ${OT_PLATFORM_DEFINES}
 )
 
-target_compile_options(openthread-posix PRIVATE
-    ${OT_CFLAGS}
-)
+target_compile_options(openthread-posix PRIVATE ${OT_CFLAGS})
 
-target_include_directories(openthread-posix PRIVATE
-    ${OT_PUBLIC_INCLUDES}
-    ${OT_PRIVATE_INCLUDES}
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/src/core
-    ${PROJECT_SOURCE_DIR}/third_party/mbedtls/repo/include
+target_include_directories(openthread-posix
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/src/posix/platform/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE
+        ${OT_PUBLIC_INCLUDES}
+        ${OT_PRIVATE_INCLUDES}
+        ${PROJECT_SOURCE_DIR}/src
+        ${PROJECT_SOURCE_DIR}/src/core
+        ${PROJECT_SOURCE_DIR}/third_party/mbedtls/repo/include
 )

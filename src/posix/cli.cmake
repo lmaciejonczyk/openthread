@@ -31,8 +31,7 @@ add_executable(ot-cli
     $<$<BOOL:${READLINE}>:console_cli.cpp>
 )
 
-set_target_properties(
-    ot-cli
+set_target_properties(ot-cli
     PROPERTIES
         C_STANDARD 99
         CXX_STANDARD 11
@@ -40,15 +39,14 @@ set_target_properties(
 
 target_include_directories(ot-cli PRIVATE ${COMMON_INCLUDES})
 
-target_compile_definitions(ot-cli PRIVATE
-    $<$<BOOL:${READLINE}>:HAVE_LIB$<UPPER_CASE:${OT_READLINE}>=1>
-    OPENTHREAD_POSIX_APP_TYPE=OT_POSIX_APP_TYPE_CLI
-    ${OT_PLATFORM_DEFINES}
+target_compile_definitions(ot-cli
+    PRIVATE
+        $<$<BOOL:${READLINE}>:HAVE_LIB$<UPPER_CASE:${OT_READLINE}>=1>
+        OPENTHREAD_POSIX_APP_TYPE=OT_POSIX_APP_TYPE_CLI
+        ${OT_PLATFORM_DEFINES}
 )
 
-target_compile_options(ot-cli PRIVATE
-    ${OT_CFLAGS}
-)
+target_compile_options(ot-cli PRIVATE ${OT_CFLAGS})
 
 target_link_libraries(ot-cli
     openthread-cli-ftd
@@ -61,6 +59,27 @@ target_link_libraries(ot-cli
     mbedcrypto
     ${READLINE_LINK_LIBRARIES}
 )
+
+add_executable(ot-ncp
+    main.c
+)
+
+set_target_properties(ot-ncp
+    PROPERTIES
+        C_STANDARD 99
+        CXX_STANDARD 11
+)
+
+target_include_directories(ot-ncp PRIVATE ${COMMON_INCLUDES})
+
+target_compile_definitions(ot-ncp
+    PRIVATE
+        OPENTHREAD_POSIX_APP_TYPE=OT_POSIX_APP_TYPE_NCP
+        ${OT_PLATFORM_DEFINES}
+)
+
+target_compile_options(ot-ncp PRIVATE ${OT_CFLAGS})
+>>>>>>> 52eb81202... align posix cmake format:src/posix/standalone.cmake
 
 
 install(TARGETS ot-cli DESTINATION bin)
