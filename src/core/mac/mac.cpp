@@ -1133,7 +1133,7 @@ void Mac::ProcessTransmitSecurity(TxFrame &aFrame)
     VerifyOrExit(aFrame.mInfo.mTxInfo.mCslPresent == 0);
 #endif
 
-    aFrame.ProcessTransmitAesCcm(*extAddress);
+    // aFrame.ProcessTransmitAesCcm(*extAddress);
 
 exit:
     return;
