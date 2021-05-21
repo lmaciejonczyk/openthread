@@ -302,6 +302,8 @@ list(APPEND ot_libs openthread-mtd)
 endif()
 endif()
 
+list(APPEND ot_libs openthread-platform-utils-mac-frame)
+
 zephyr_link_libraries(${ot_libs})
 
 endif()
