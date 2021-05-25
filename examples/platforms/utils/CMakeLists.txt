@@ -57,38 +57,3 @@ target_include_directories(openthread-platform-utils PRIVATE
 
 # Provide a static library implementation of platform-utils for non-cmake platforms
 add_library(openthread-platform-utils-static $<TARGET_OBJECTS:openthread-platform-utils>)
-
-
-################################################################################################
-add_library(openthread-platform-utils-mac-frame
-    mac_frame.cpp
-)
-
-set_target_properties(
-    openthread-platform-utils-mac-frame
-    PROPERTIES
-        C_STANDARD 99
-        CXX_STANDARD 11
-)
-
-target_compile_definitions(openthread-platform-utils-mac-frame PRIVATE
-    $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
-)
-
-target_compile_options(openthread-platform-utils-mac-frame PRIVATE
-    ${OT_CFLAGS}
-)
-
-target_include_directories(openthread-platform-utils-mac-frame PUBLIC
-    ${OT_PUBLIC_INCLUDES}
-    $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
-    ${PROJECT_SOURCE_DIR}/examples/platforms
-    ${PROJECT_SOURCE_DIR}/examples/platforms/utils
-)
-
-target_sources(openthread-platform-utils-mac-frame PRIVATE mac_frame.cpp)
-
-target_link_libraries(openthread-platform-utils-mac-frame
-    PRIVATE
-        ot-config
-)
